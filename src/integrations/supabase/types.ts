@@ -328,6 +328,12 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
+      list_property_bucket_paths: {
+        Args: { _slug: string }
+        Returns: {
+          name: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
