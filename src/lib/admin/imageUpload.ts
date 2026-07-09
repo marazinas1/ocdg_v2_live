@@ -79,7 +79,17 @@ export async function deleteStorageObjects(paths: string[]): Promise<void> {
   const chunks: string[][] = [];
   for (let i = 0; i < paths.length; i += 100) chunks.push(paths.slice(i, i + 100));
   for (const chunk of chunks) {
-    const { error } = await supabase.storage.from(BUCKET).remove(chunk);
+    const { data, error } = await supabase.storage.from(BUCKET).remove(chunk);
     if (error) throw error;
+    // Supabase Storage returns `{ data: [], error: null }` when RLS filters out
+    // rows or the path doesn't exist — no error is raised. We must verify that
+    // every requested path was actually removed, otherwise orphans accumulate.
+    const removed = new Set((data ?? []).map((o: any) => o.name));
+    const missing = chunk.filter((p) => !removed.has(p));
+    if (missing.length) {
+      throw new Error(
+        `Storage delete failed for ${missing.length} object(s): ${missing.join(", ")}`,
+      );
+    }
   }
 }
