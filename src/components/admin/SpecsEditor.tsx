@@ -9,19 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SPEC_ICON_KEYS } from "@/lib/specIcons";
 
 export type SpecItem = { icon: string; title: string; description: string };
 
-export const SPEC_ICONS = [
-  "elevator",
-  "appliances",
-  "floors",
-  "resilience",
-  "pool",
-  "fireplace",
-  "kitchen",
-  "deck",
-] as const;
+// Re-exported for backward compatibility with existing imports.
+export const SPEC_ICONS = SPEC_ICON_KEYS;
 
 export default function SpecsEditor({
   value,
@@ -51,7 +44,7 @@ export default function SpecsEditor({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {SPEC_ICONS.map((s) => (
+              {SPEC_ICON_KEYS.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}
                 </SelectItem>
