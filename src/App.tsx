@@ -47,6 +47,7 @@ const ArchiveAnchor113 = lazy(() => import("./pages/ArchiveAnchor113"));
 const GalleryPage = lazy(() => import("./pages/GalleryPage"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 
 const queryClient = new QueryClient();
 
@@ -124,6 +125,7 @@ const App = () => (
             <Route path="/testimonials" element={<Testimonials />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
