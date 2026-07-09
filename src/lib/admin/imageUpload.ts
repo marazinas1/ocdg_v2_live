@@ -95,32 +95,22 @@ export async function deleteStorageObjects(paths: string[]): Promise<void> {
 }
 
 /**
- * Recursively list every object under `prefix/` in the property-images bucket.
- * Requires the authenticated admin SELECT policy on storage.objects — do NOT
- * call from public code paths. Throws on any list error (caller must abort).
+ * List every object stored under `<slug>/` in the property-images bucket.
+ *
+ * Uses the admin-gated RPC `list_property_bucket_paths` — a single LIKE-prefix
+ * query against storage.objects, no folder/file heuristic, no recursion, no
+ * dependency on `storage.list()` semantics. Do NOT call from public code
+ * paths; the RPC returns nothing for non-admins.
  */
-async function listAllUnder(prefix: string): Promise<string[]> {
-  const results: string[] = [];
-  const stack: string[] = [prefix];
-  while (stack.length) {
-    const dir = stack.pop()!;
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .list(dir, { limit: 1000 });
-    if (error) throw error;
-    if (!data) throw new Error(`storage.list('${dir}') returned no data`);
-    for (const entry of data) {
-      const path = `${dir}/${entry.name}`;
-      // The JS client marks folder placeholders with id === null and no metadata.
-      const isFolder = (entry as any).id === null || (entry as any).metadata == null;
-      if (isFolder) {
-        stack.push(path);
-      } else {
-        results.push(path);
-      }
-    }
-  }
-  return results;
+async function listAllUnder(slug: string): Promise<string[]> {
+  const clean = slug.trim().replace(/^\/+|\/+$/g, "");
+  if (!clean) throw new Error("listAllUnder: empty slug");
+  const { data, error } = await supabase.rpc("list_property_bucket_paths", {
+    _slug: clean,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("list_property_bucket_paths returned no data");
+  return (data as { name: string }[]).map((r) => r.name);
 }
 
 /**
@@ -146,6 +136,18 @@ export async function sweepPropertyFolder(
     );
   }
   const all = await listAllUnder(prefix);
+  // Correctness guard: every referenced path MUST appear in the listing. If
+  // one is missing, the listing is incomplete (RLS gap, prefix mismatch,
+  // stale RPC, etc.) and we must abort — proceeding could delete objects
+  // that property_images still references.
+  const allSet = new Set(all);
+  const missing: string[] = [];
+  for (const ref of referenced) if (!allSet.has(ref)) missing.push(ref);
+  if (missing.length) {
+    throw new Error(
+      `sweepPropertyFolder: listing missing ${missing.length} referenced path(s); aborting to avoid deleting live images. Missing: ${missing.join(", ")}`,
+    );
+  }
   const orphans = all.filter((p) => !referenced.has(p));
   if (orphans.length) await deleteStorageObjects(orphans);
   return { removed: orphans };
