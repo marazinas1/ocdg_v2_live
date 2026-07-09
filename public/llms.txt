@@ -1,0 +1,17 @@
+# Ocean City Development Group
+
+> Premier custom luxury home builder in Ocean City, New Jersey. Designed in collaboration with Halliday Architects and built by Halliday-Leonard Custom Home Builders.
+
+Ocean City Development Group (OCDG) builds high-end custom coastal residences across Ocean City, NJ. The site showcases active listings, properties under contract, sold portfolio, client testimonials, and contact information for inquiries directed to Patrick A. Halliday.
+
+## Pages
+
+- [Home](/): Overview of OCDG, current developments, and approach.
+- [About](/about): Firm story, leadership, and partnerships with Halliday Architects and Halliday-Leonard.
+- [Developments](/developments): Full portfolio of active listings, under contract, and sold homes.
+- [Active Listings](/developments/active-listings): Homes currently for sale.
+- [Under Contract](/developments/under-contract): Properties currently under contract.
+- [Sold](/developments/sold): Completed and sold residences.
+- [Gallery](/gallery): Curated renderings and photography from across the portfolio.
+- [Testimonials](/testimonials): Reviews and stories from past clients.
+- [Contact](/contact): Inquiry form and direct contact for Patrick A. Halliday.
