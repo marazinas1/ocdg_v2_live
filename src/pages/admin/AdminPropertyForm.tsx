@@ -40,6 +40,7 @@ import {
   ImageCategory,
   deleteStorageObjects,
   getPublicUrl,
+  sweepPropertyFolder,
   uploadImage,
 } from "@/lib/admin/imageUpload";
 import { isValidSlug, slugify } from "@/lib/admin/slug";
@@ -668,6 +669,28 @@ function FormInner() {
       if (uploadedRows.length) {
         const { error } = await supabase.from("property_images").insert(uploadedRows);
         if (error) throw error;
+      }
+
+      // 5. Sweep <slug>/ for orphans. Referenced = every storage_path now
+      //    present in property_images for this property (retained existing +
+      //    newly inserted). property_images is the source of truth; anything
+      //    outside this set is safe to remove. sweepPropertyFolder throws if
+      //    listing fails, so a failed list never wipes referenced objects.
+      const referenced = new Set<string>();
+      for (const cat of Object.keys(slotsByCategory)) {
+        for (const slot of slotsByCategory[cat] ?? []) {
+          if (slot.kind === "existing") referenced.add(slot.storage_path);
+        }
+      }
+      for (const row of uploadedRows) referenced.add(row.storage_path);
+      try {
+        await sweepPropertyFolder(slug.trim(), referenced);
+      } catch (sweepErr: any) {
+        // Save succeeded; only the orphan cleanup failed. Surface a warning
+        // instead of failing the save.
+        toast.warning(
+          `Saved, but orphan cleanup failed: ${sweepErr?.message ?? "unknown error"}`,
+        );
       }
 
       toast.success("Saved");

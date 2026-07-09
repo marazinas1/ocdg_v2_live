@@ -93,3 +93,50 @@ export async function deleteStorageObjects(paths: string[]): Promise<void> {
     }
   }
 }
+
+/**
+ * Recursively list every object under `prefix/` in the property-images bucket.
+ * Requires the authenticated admin SELECT policy on storage.objects — do NOT
+ * call from public code paths. Throws on any list error (caller must abort).
+ */
+async function listAllUnder(prefix: string): Promise<string[]> {
+  const results: string[] = [];
+  const stack: string[] = [prefix];
+  while (stack.length) {
+    const dir = stack.pop()!;
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .list(dir, { limit: 1000 });
+    if (error) throw error;
+    if (!data) throw new Error(`storage.list('${dir}') returned no data`);
+    for (const entry of data) {
+      const path = `${dir}/${entry.name}`;
+      // The JS client marks folder placeholders with id === null and no metadata.
+      const isFolder = (entry as any).id === null || (entry as any).metadata == null;
+      if (isFolder) {
+        stack.push(path);
+      } else {
+        results.push(path);
+      }
+    }
+  }
+  return results;
+}
+
+/**
+ * Sweep every storage object under `<slug>/` and delete any that is not in
+ * `referenced`. property_images is the source of truth: anything in that set
+ * is preserved unconditionally. If listing fails, throws — never interprets
+ * a failed list as "no references". Admin-only.
+ */
+export async function sweepPropertyFolder(
+  slug: string,
+  referenced: Set<string>,
+): Promise<{ removed: string[] }> {
+  const prefix = slug.trim().replace(/^\/+|\/+$/g, "");
+  if (!prefix) throw new Error("sweepPropertyFolder: empty slug");
+  const all = await listAllUnder(prefix);
+  const orphans = all.filter((p) => !referenced.has(p));
+  if (orphans.length) await deleteStorageObjects(orphans);
+  return { removed: orphans };
+}
