@@ -47,6 +47,7 @@ const ArchiveAnchor113 = lazy(() => import("./pages/ArchiveAnchor113"));
 const GalleryPage = lazy(() => import("./pages/GalleryPage"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const PropertyPage = lazy(() => import("./pages/PropertyPage"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminProperties = lazy(() => import("./pages/admin/AdminProperties"));
 const AdminPropertyForm = lazy(() => import("./pages/admin/AdminPropertyForm"));
@@ -119,6 +120,7 @@ const App = () => (
             <Route path="/developments/sold/109-anchor-road" element={<ArchiveAnchor109 />} />
             <Route path="/developments/sold/111-anchor-road" element={<ArchiveAnchor111 />} />
             <Route path="/developments/sold/113-anchor-road" element={<ArchiveAnchor113 />} />
+            <Route path="/developments/property/:slug" element={<PropertyPage />} />
             {/* Backward-compat aliases for old /past-projects URLs */}
             <Route path="/developments/past-projects" element={<Navigate to="/developments/sold" replace />} />
             <Route path="/developments/past-projects/:slug" element={<PastProjectsRedirect />} />
