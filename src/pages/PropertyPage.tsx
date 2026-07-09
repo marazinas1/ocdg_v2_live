@@ -115,7 +115,7 @@ const PropertyPage = () => {
         .eq("slug", slug!)
         .maybeSingle();
       if (error) throw error;
-      return data as PropertyRow | null;
+      return data as unknown as PropertyRow | null;
     },
   });
 
