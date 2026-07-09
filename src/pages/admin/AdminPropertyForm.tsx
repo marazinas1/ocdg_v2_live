@@ -549,7 +549,13 @@ function FormInner() {
     }
     setSaving(true);
     try {
-      // 1. Upsert property row
+      // 1. Delete removed/replaced images from storage FIRST. If this throws we
+      //    abort before touching the DB — no orphans, no half-updated state.
+      if (deletedStoragePaths.length) {
+        await deleteStorageObjects(deletedStoragePaths);
+      }
+
+      // 2. Upsert property row
       const payload = {
         title: title.trim(),
         unit: unit || null,
@@ -594,10 +600,7 @@ function FormInner() {
       }
       if (!propertyId) throw new Error("No property id after save");
 
-      // 2. Delete removed images from storage + db.
-      if (deletedStoragePaths.length) {
-        await deleteStorageObjects(deletedStoragePaths);
-      }
+      // 3. Delete DB rows for the storage objects we just removed.
       if (deletedDbIds.length) {
         const { error } = await supabase
           .from("property_images")
@@ -606,7 +609,7 @@ function FormInner() {
         if (error) throw error;
       }
 
-      // 3. Upload pending files, then insert rows. Update existing rows for alt/sort/floor_plan changes.
+      // 4. Upload pending files, then insert rows. Update existing rows for alt/sort/floor_plan changes.
       const allSlots: ImageSlot[] = Object.values(slotsByCategory).flat();
       const uploadedRows: {
         property_id: string;
