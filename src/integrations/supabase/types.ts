@@ -137,6 +137,137 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          bedrooms: number | null
+          created_at: string
+          description: string | null
+          floor_plans: Json
+          full_baths: number | null
+          half_baths: number | null
+          headline: string | null
+          id: string
+          listed_date: string | null
+          location_city: string | null
+          location_features: Json
+          location_highlight: string | null
+          location_neighborhood: string | null
+          location_state: string | null
+          luxury_features: Json
+          price: string | null
+          published: boolean
+          slug: string
+          sort_order: number
+          specs: Json
+          sqft: number | null
+          status: string
+          tagline: string | null
+          title: string
+          total_rooms: number | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          bedrooms?: number | null
+          created_at?: string
+          description?: string | null
+          floor_plans?: Json
+          full_baths?: number | null
+          half_baths?: number | null
+          headline?: string | null
+          id?: string
+          listed_date?: string | null
+          location_city?: string | null
+          location_features?: Json
+          location_highlight?: string | null
+          location_neighborhood?: string | null
+          location_state?: string | null
+          luxury_features?: Json
+          price?: string | null
+          published?: boolean
+          slug: string
+          sort_order?: number
+          specs?: Json
+          sqft?: number | null
+          status?: string
+          tagline?: string | null
+          title: string
+          total_rooms?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bedrooms?: number | null
+          created_at?: string
+          description?: string | null
+          floor_plans?: Json
+          full_baths?: number | null
+          half_baths?: number | null
+          headline?: string | null
+          id?: string
+          listed_date?: string | null
+          location_city?: string | null
+          location_features?: Json
+          location_highlight?: string | null
+          location_neighborhood?: string | null
+          location_state?: string | null
+          luxury_features?: Json
+          price?: string | null
+          published?: boolean
+          slug?: string
+          sort_order?: number
+          specs?: Json
+          sqft?: number | null
+          status?: string
+          tagline?: string | null
+          title?: string
+          total_rooms?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      property_images: {
+        Row: {
+          alt_text: string | null
+          category: string
+          created_at: string
+          floor_plan_id: string | null
+          id: string
+          property_id: string
+          sort_order: number
+          storage_path: string
+        }
+        Insert: {
+          alt_text?: string | null
+          category: string
+          created_at?: string
+          floor_plan_id?: string | null
+          id?: string
+          property_id: string
+          sort_order?: number
+          storage_path: string
+        }
+        Update: {
+          alt_text?: string | null
+          category?: string
+          created_at?: string
+          floor_plan_id?: string | null
+          id?: string
+          property_id?: string
+          sort_order?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_images_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -161,6 +292,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -175,6 +327,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      is_admin: { Args: { _user_id?: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -194,7 +347,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -321,6 +474,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const
