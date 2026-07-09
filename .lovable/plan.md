@@ -1,178 +1,107 @@
+## Goal
 
-# Step 2 — Admin Panel (CRUD)
+Introduce ONE dynamic public property page driven by the `properties` + `property_images` tables, without touching any of the ~20 hardcoded property TSX files. Old and new coexist for side-by-side comparison.
 
-Everything below is added under `src/pages/admin/` and `src/components/admin/`. No public page, no `src/lib/*` data file, and no existing property page is touched. `src/App.tsx` gets only new `/admin/*` routes.
+## 1. New route
 
-## 1. Route additions in `src/App.tsx`
+`src/App.tsx` — add a single lazy route (nothing else touched):
 
-Four new lazy routes, all above the catch-all, all wrapped in `<AdminProtected>`:
-
-- `/admin` → `AdminProperties` (list)
-- `/admin/properties/new` → `AdminPropertyForm`
-- `/admin/properties/:id/edit` → `AdminPropertyForm`
-- `/admin` catches unknown `/admin/*` and redirects to `/admin`
-
-`/admin/login` stays as-is (public).
-
-## 2. Protected shell — `src/components/admin/AdminProtected.tsx` + `AdminShell.tsx`
-
-`AdminProtected` runs an auth+role check before rendering children:
-
-1. Subscribe to `supabase.auth.onAuthStateChange` first (per platform rules), then call `getSession()`.
-2. If no session → redirect to `/admin/login`.
-3. Call `getUser()` to re-validate against the auth server, then query `user_roles` for `role='admin'` (blocked by RLS for non-admins → treated as unauthorized, sign out, redirect).
-4. While either check is in-flight: render the same full-screen spinner used elsewhere. Never flash protected content, never redirect prematurely.
-
-`AdminShell` renders a top bar: "OCDG Admin" wordmark, current user email, "Sign out" button (`supabase.auth.signOut()` → `/admin/login`). Children render inside a max-width container.
-
-## 3. Data hooks — `src/hooks/admin/`
-
-React Query is already installed but unused; wire it up here only.
-
-- `useProperties()` — list of all rows (published + drafts), joined with `card` image URL via `getPublicUrl`.
-- `useProperty(id)` — full row + all `property_images` for the form.
-- `useUpdatePropertyStatus()` — optimistic mutation, rolls back and toasts on error.
-- `useUpsertProperty()` — insert/update wrapper.
-- `useDeleteProperty()` — deletes storage objects first, then DB rows (see §7).
-- `useSlugAvailability(slug, excludeId?)` — debounced uniqueness check that pings `properties` before save; never relies on catching the DB unique-constraint error.
-
-All mutations invalidate `["admin-properties"]` and, where relevant, `["admin-property", id]`.
-
-## 4. Property list — `src/pages/admin/AdminProperties.tsx`
-
-Layout:
-
-```text
-┌ AdminShell ────────────────────────────────────┐
-│  Properties           [+ Add New Property]     │
-│  Search…       [ All | Coming | Active | UC | Sold ]
-│  ┌────────────────────────────────────────────┐│
-│  │ img | Title | Price | Status▼ | Pub | Date | Edit ││
-│  └────────────────────────────────────────────┘│
-└────────────────────────────────────────────────┘
+```
+/developments/property/:slug  →  <PropertyPage />
 ```
 
-- Card thumbnail from `property_images` where `category = 'card'` (fallback: skeleton placeholder).
-- Status column is a shadcn `Select` bound to `useUpdatePropertyStatus` — one click, optimistic, toast on success, rollback + toast.error on failure. Values: `coming_soon | active | under_contract | sold`.
-- Status badge palette (labels + Tailwind classes, mirrors the visual convention in `src/lib/currentProjects.ts`):
-  - `coming_soon` → "Coming Soon" · `bg-slate-200 text-slate-800`
-  - `active` → "Active Listing" · `bg-emerald-500 text-white`
-  - `under_contract` → "Under Contract" · `bg-amber-600 text-white`
-  - `sold` → "Sold" · `bg-slate-500 text-white`
-- Published column: shadcn `Switch` (also optimistic).
-- Filter tabs + title search filter client-side over the already-fetched list.
-- Empty state (`properties.length === 0` after fetch): centered message + primary "Add New Property" button.
+Placed above the `*` catch-all.
 
-## 5. Property form — `src/pages/admin/AdminPropertyForm.tsx`
+## 2. Shared spec-icon registry (single source of truth)
 
-Single component for both `new` and `edit`. `react-hook-form` (already in deps) + `zod` for validation. Sections rendered as shadcn `Card`s with clear headers.
+New file: `src/lib/specIcons.ts`
 
-### Basics
-- `title`, `unit` (optional), `slug` (auto-generated from title on change while user hasn't manually edited it; slugify → lowercase, hyphens, url-safe; live uniqueness check + inline error), `status` (Select), `price` (free text), `listed_date` (date input), `published` (Switch).
+- Exports `SPEC_ICON_KEYS` — the canonical list of admin-selectable keys:
+  `elevator, appliances, floors, resilience, pool, fireplace, kitchen, deck`.
+- Exports `SPEC_ICON_MAP: Record<string, LucideIcon>` covering:
+  - All 8 admin keys: `elevator→ArrowUpFromLine`, `appliances→ChefHat`, `floors→Sparkles` (existing usage), `resilience→ShieldCheck`, `pool→Waves`, `fireplace→Flame`, `kitchen→UtensilsCrossed`, `deck→Sun`.
+  - Legacy keys still present in hardcoded pages so a Step-4 migration renders correctly: `hardwood→TreePine`, `hvac→Thermometer`, `rooftop→Sparkles`, `flooring→Sparkles`.
+- Exports `getSpecIcon(key: string): LucideIcon` returning `SPEC_ICON_MAP[key] ?? Sparkles`. Sparkles remains the fallback for genuinely unknown keys only.
+- `src/components/admin/SpecsEditor.tsx` is updated to import `SPEC_ICON_KEYS` instead of its local `SPEC_ICONS` const so the dropdown and the public renderer cannot drift apart. This is the only pre-existing file modified beyond `App.tsx`, and it's a pure refactor — same 8 values in the same order.
+- `PropertyPage.tsx` imports `getSpecIcon` for its spec grid.
 
-### Copy
-- `headline`, `tagline`, `description` (Textarea), `location_highlight`.
+## 3. New file: `src/pages/PropertyPage.tsx`
 
-### Details
-- `bedrooms`, `full_baths`, `half_baths`, `total_rooms`, `sqft` (all optional integers), `location_neighborhood`, `location_city` (default `Ocean City`), `location_state` (default `NJ`).
+Fetching (react-query, already wired in `App.tsx`):
 
-### Images (fixed-slot uploader, §6)
-Slot groups with the exact counts from the standard package:
+- `useQuery(['property', slug])` → `supabase.from('properties').select('*').eq('slug', slug).maybeSingle()`
+- `useQuery(['property-images', property.id], enabled: !!property)` → `supabase.from('property_images').select('*').eq('property_id', property.id).order('sort_order')`
+- Admin check: `useAdminAuth()` (existing hook). If `!property` or (`property.published === false` and not admin) → `<Navigate to="/404" replace />`.
+- Loading: full-screen skeleton matching existing `PageFallback` styling.
 
-- Hero — 1
-- Card thumbnail — 1
-- Exterior renderings — 3 required + "Add more" button
-- Close-up exterior — 3 required + "Add more"
-- Interior renderings — 6 required + "Add more"
+Image URL resolution:
 
-Each slot: click or drag-drop, upload progress bar, preview, alt text input (auto-prefilled `"{title} - {category label}"`), Replace, Remove. Reorder within a category via up/down buttons (updates `sort_order`).
+- Never call `storage.list()`.
+- Per row: `supabase.storage.from('property-images').getPublicUrl(row.storage_path).data.publicUrl`.
+- Group by `category`: `hero`, `card`, `exterior`, `exterior_closeup`, `interior`, `floor_plan`. Floor-plan rows carry `floor_plan_id` matching entries in `properties.floor_plans` jsonb.
 
-### Floor Plans (repeatable, `properties.floor_plans` jsonb + `property_images` with `category='floor_plan'`)
-Each row:
-- `id` (uuid generated client-side, stored in the jsonb entry AND on the linked image row as `floor_plan_id`)
-- `name` (e.g. "Ground Level")
-- Image upload → `category='floor_plan'`, `floor_plan_id = row.id`
-- `description`
-- `highlights` — add/remove short strings
-- Drag-to-reorder rows
+Rendering — 1:1 with `Bayland3213.tsx` visual structure:
 
-### Specs (`properties.specs` jsonb)
-Repeatable rows: `icon` (Select of `elevator | appliances | floors | resilience | pool | fireplace | kitchen | deck`), `title`, `description`.
+1. **Hero** — parallax + Ken Burns using the `hero` category image. Status pill, title, unit, headline, price, bed/bath/location line, tagline, "View the Opportunity" CTA. Hero `<img>` uses `loading="eager"` + `fetchpriority="high"` for LCP; gallery stays lazy.
+2. **Highlights bar** — derived from `bedrooms`, `full_baths`+`half_baths`, `total_rooms`, `sqft`. Missing values are omitted.
+3. **Vision** — headline, tagline, description; bed/bath/room mini-grid; secondary image = `exterior[0]` or first non-hero image.
+4. **Exterior gallery** — grid of `exterior` (falling back to `exterior_closeup`). Lightbox with ←/→/Esc keyboard nav, factored as a small inline `Lightbox` helper in the same file.
+5. **Floor plans** — tabs from `properties.floor_plans` jsonb (`{id, name, description, highlights}`). Image = `property_images` row where `category='floor_plan'` and `floor_plan_id` matches. Hidden if array empty/null.
+6. **Interior gallery** — `interior` category, shared lightbox with exterior.
+7. **Specs grid** — `properties.specs` jsonb (`{icon, title, description}`). Icon resolved via `getSpecIcon(spec.icon)` from §2. Section hidden if empty.
+8. **Luxury + Location features** — two `<ul>`s from the jsonb arrays. Each hidden individually if empty.
+9. **Inquiry section** — inline `<PropertyInquiryForm property={property} />` (see §4).
+10. **SEO** — `<SEO title={title} description={tagline||headline} path={location.pathname} />`, using card image publicUrl if present.
 
-### Features
-- `luxury_features` and `location_features` — two independent string lists with add / remove / reorder.
+`GlobalNav` + `GlobalFooter` wrap the page.
 
-### Behavior
-- `beforeunload` guard + in-app `<Prompt>` equivalent (`useBlocker`) when `formState.isDirty`.
-- Save flow: validate → uniqueness check → upsert `properties` row → diff `property_images` rows (insert new, update changed alt/sort/floor_plan_id, delete removed) → success toast → invalidate queries → stay on page (edit) or navigate to `/admin/properties/:id/edit` (new).
-- Delete button (edit mode only): shadcn `AlertDialog` confirmation → `useDeleteProperty` (§7).
+Missing-data behavior: every section renders behind a truthy guard so partial properties look clean.
 
-## 6. Image processing & upload — `src/lib/admin/imageUpload.ts`
+## 4. Inquiry form (correct implementation)
 
-Pure browser pipeline, no server function:
+Modeled on `Contact.tsx` + `Register.tsx`, NOT on the fake `setTimeout` handler in the hardcoded property pages.
 
-1. Read file → decode via `createImageBitmap`.
-2. Compute target long-edge: 800px for `card`, 2400px for everything else. Skip resize if already smaller.
-3. Draw to `OffscreenCanvas` (fallback: hidden `<canvas>`) → `canvas.convertToBlob({ type: 'image/jpeg', quality: 0.8 })`.
-4. Upload to `property-images` at `${slug}/${category}/${crypto.randomUUID()}.jpg` via `supabase.storage.from('property-images').upload(...)` with `cacheControl: '31536000', contentType: 'image/jpeg', upsert: false`.
-5. Progress reported via `onUploadProgress` (v2 API) → per-slot progress bar.
-6. On success: insert/update `property_images` row with `storage_path`, `category`, `alt_text`, `sort_order`, `floor_plan_id?`.
-7. On failure: keep slot in error state with a Retry button; nothing is written to the DB and no orphan is created.
-8. Public URL for previews: `supabase.storage.from('property-images').getPublicUrl(storage_path).data.publicUrl`. `storage.list()` is never called anywhere.
+- Fields: name, email, phone, interest (select seeded from `propertyConfig.interestLevels`), message. Honeypot `<input name="company">` hidden off-screen, identical to Contact.
+- `formatPhone` helper reused (inline copy, keeps the page standalone).
+- Validation: 10-digit US phone; toast error otherwise. Honeypot filled → silent return.
+- Submit:
+  1. `crypto.randomUUID()` → insert into `leads` with `{name, email, phone, interest, message, source: property.title, user_agent: navigator.userAgent}`.
+  2. `supabase.functions.invoke('send-transactional-email', { body: { templateName: 'inquiry-notification', idempotencyKey: `property-${property.slug}-${id}`, templateData: { name, email, phone, interest, message, source: property.title } } })`.
+  3. Success toast referencing the property title; reset form.
+- Error path: same fallback toast as Contact/Register with phone + email.
 
-## 7. Deletion — zero orphans
+## 5. Backend fix
 
-For every path that removes an image, the storage object is deleted before (or immediately after) the DB row:
+Migration: extend the `email_send_log.status` CHECK to include `'rate_limited'`.
 
-- Removing / replacing a single slot in the form: `storage.remove([old_path])` → then delete/update the `property_images` row.
-- Deleting an entire property (`useDeleteProperty`):
-  1. Fetch all `storage_path`s for the property from `property_images`.
-  2. `storage.from('property-images').remove(paths)` in one call (chunked to 100 if needed).
-  3. `DELETE FROM properties WHERE id = ?` — `property_images` rows disappear via `ON DELETE CASCADE`.
-  4. Toast success. On storage-delete failure: abort DB delete and toast error, so the row is never orphaned in reverse either.
-
-Removing a floor-plan row also deletes its linked `property_images` object.
-
-## 8. Files created
-
-```text
-src/App.tsx                                     (edit: add 3 admin routes)
-src/components/admin/AdminProtected.tsx
-src/components/admin/AdminShell.tsx
-src/components/admin/StatusBadge.tsx
-src/components/admin/StatusSelect.tsx
-src/components/admin/ImageSlot.tsx
-src/components/admin/ImageSlotGroup.tsx
-src/components/admin/FloorPlanEditor.tsx
-src/components/admin/SpecsEditor.tsx
-src/components/admin/StringListEditor.tsx
-src/hooks/admin/useAdminAuth.ts
-src/hooks/admin/useProperties.ts
-src/hooks/admin/useProperty.ts
-src/hooks/admin/useUpsertProperty.ts
-src/hooks/admin/useDeleteProperty.ts
-src/hooks/admin/useSlugAvailability.ts
-src/hooks/admin/useUnsavedChangesGuard.ts
-src/lib/admin/status.ts             (status labels + badge classes)
-src/lib/admin/slug.ts               (slugify helper)
-src/lib/admin/imageUpload.ts        (resize + upload pipeline)
-src/lib/admin/schema.ts             (zod schemas for the form)
-src/pages/admin/AdminProperties.tsx
-src/pages/admin/AdminPropertyForm.tsx
+```sql
+ALTER TABLE public.email_send_log DROP CONSTRAINT email_send_log_status_check;
+ALTER TABLE public.email_send_log ADD CONSTRAINT email_send_log_status_check
+  CHECK (status IN ('pending','sent','suppressed','failed','bounced','complained','dlq','rate_limited'));
 ```
 
-## 9. Explicitly out of scope for this step
+No other schema, RLS, edge function, or config change.
 
-- No dynamic public property page (Step 3).
-- No changes to `src/App.tsx` beyond the three added routes.
-- No changes to any `src/lib/currentProjects.ts`, `src/lib/pastProjects.ts`, or any existing page/component.
-- No new DB migrations — Step 1's schema is used as-is.
-- No leads view (deferred until we intentionally add its RLS policy).
+## 6. Explicit non-goals
 
-## 10. Technical notes
+- No edits to any existing `src/pages/*` property file, category page, `src/lib/*` data file, `Hero.tsx`, `Register.tsx`, `Contact.tsx`, `SEO.tsx`, or admin pages beyond the `SpecsEditor` icon-list refactor in §2.
+- No `src/App.tsx` changes beyond adding one lazy import and one `<Route>`.
+- No deletions.
+- Sending domain not configured (out of scope until go-live).
 
-- React Query client is already provided at the app root; no changes needed there.
-- Auth check pattern: `onAuthStateChange` first, then `getSession`; `getUser` re-validates before trusting the id in the `user_roles` lookup.
-- All admin data mutations go through the `authenticated` role and are gated by RLS + `is_admin()` — no service key is ever used from the browser.
-- Storage uploads rely on the admin-only INSERT/UPDATE/DELETE policies on `storage.objects` established in Step 1; public reads work via the CDN path.
-- Client-side image pipeline uses `createImageBitmap` + `OffscreenCanvas` (widely supported in evergreen browsers) with a `<canvas>` fallback — this is where 1.5MB originals become ~150–400KB JPEGs before they ever hit the network.
+## Files touched
+
+- `src/App.tsx` (add route)
+- `src/pages/PropertyPage.tsx` (new)
+- `src/lib/specIcons.ts` (new, shared)
+- `src/components/admin/SpecsEditor.tsx` (import shared key list)
+- one migration for the `email_send_log` CHECK
+
+## Verification after build
+
+1. `/developments/property/<slug>` for a fully-populated DB property → visual parity with `Bayland3213.tsx` section-by-section.
+2. Sparsely-populated property → sections without data are absent, not empty.
+3. Inquiry form submit → new row in `leads`; `email_send_log` entry created (delivery will fail without a verified domain but must not throw a client error toast).
+4. Unpublished property while signed out → redirects to NotFound; signed in as admin → renders.
+5. Every admin-selectable spec icon renders a distinct icon (no unintended Sparkles fallback).
+6. Old hardcoded pages still work unchanged.
