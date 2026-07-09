@@ -48,6 +48,8 @@ const GalleryPage = lazy(() => import("./pages/GalleryPage"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminProperties = lazy(() => import("./pages/admin/AdminProperties"));
+const AdminPropertyForm = lazy(() => import("./pages/admin/AdminPropertyForm"));
 
 const queryClient = new QueryClient();
 
@@ -126,6 +128,10 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminProperties />} />
+            <Route path="/admin/properties/new" element={<AdminPropertyForm />} />
+            <Route path="/admin/properties/:id/edit" element={<AdminPropertyForm />} />
+            <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
