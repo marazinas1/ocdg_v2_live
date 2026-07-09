@@ -1,0 +1,26 @@
+export type PropertyStatus = "coming_soon" | "active" | "under_contract" | "sold";
+
+export const PROPERTY_STATUSES: PropertyStatus[] = [
+  "coming_soon",
+  "active",
+  "under_contract",
+  "sold",
+];
+
+export const STATUS_LABELS: Record<PropertyStatus, string> = {
+  coming_soon: "Coming Soon",
+  active: "Active Listing",
+  under_contract: "Under Contract",
+  sold: "Sold",
+};
+
+export const STATUS_BADGE_CLASSES: Record<PropertyStatus, string> = {
+  coming_soon: "bg-slate-200 text-slate-800",
+  active: "bg-emerald-500 text-white",
+  under_contract: "bg-amber-600 text-white",
+  sold: "bg-slate-500 text-white",
+};
+
+export function isPropertyStatus(v: string): v is PropertyStatus {
+  return (PROPERTY_STATUSES as string[]).includes(v);
+}

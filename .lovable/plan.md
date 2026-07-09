@@ -1,116 +1,178 @@
-## Step 1 — Foundation: schema, storage, admin auth
 
-Foundation-only. No admin UI beyond a single login page. No changes to existing property pages, data files, or routes (except adding `/admin/login`).
+# Step 2 — Admin Panel (CRUD)
 
----
+Everything below is added under `src/pages/admin/` and `src/components/admin/`. No public page, no `src/lib/*` data file, and no existing property page is touched. `src/App.tsx` gets only new `/admin/*` routes.
 
-### 1. Database migration
+## 1. Route additions in `src/App.tsx`
 
-One migration creating everything below.
+Four new lazy routes, all above the catch-all, all wrapped in `<AdminProtected>`:
 
-**`app_role` enum** — `'admin'` (leaves room for future roles).
+- `/admin` → `AdminProperties` (list)
+- `/admin/properties/new` → `AdminPropertyForm`
+- `/admin/properties/:id/edit` → `AdminPropertyForm`
+- `/admin` catches unknown `/admin/*` and redirects to `/admin`
 
-**`user_roles` table**
-- `id uuid pk`, `user_id uuid references auth.users on delete cascade`, `role app_role not null`, `created_at timestamptz`
-- Unique `(user_id, role)`
-- GRANT `SELECT` to `authenticated`; GRANT `ALL` to `service_role`. No `anon` grant.
+`/admin/login` stays as-is (public).
 
-**`is_admin(_user_id uuid default auth.uid())` — SECURITY DEFINER**
-- `language sql stable`, `set search_path = public`
-- Returns true iff a row exists in `user_roles` with `role = 'admin'`
-- Prevents RLS recursion when policies reference it
+## 2. Protected shell — `src/components/admin/AdminProtected.tsx` + `AdminShell.tsx`
 
-**`properties` table** — exactly the columns specified:
-- `id`, `slug` (unique), `title`, `unit`, `headline`, `tagline`, `description`, `price`
-- `status text not null default 'coming_soon'` with CHECK in `('coming_soon','active','under_contract','sold')`
-- `bedrooms`, `full_baths`, `half_baths`, `total_rooms`, `sqft` (all nullable int)
-- `location_neighborhood`, `location_city` default `'Ocean City'`, `location_state` default `'NJ'`, `location_highlight`
-- `specs jsonb default '[]'`, `floor_plans jsonb default '[]'`, `luxury_features jsonb default '[]'`, `location_features jsonb default '[]'`
-- `listed_date date`, `sort_order int default 0`, `published boolean default false`
-- `created_at`, `updated_at timestamptz`
-- Indexes: `slug`, `status`, `published`, `(published, sort_order)`
+`AdminProtected` runs an auth+role check before rendering children:
 
-**`property_images` table**
-- `id`, `property_id uuid references properties on delete cascade`
-- `category text not null` with CHECK in `('hero','card','exterior','exterior_closeup','interior','floor_plan')`
-- `floor_plan_id text` (links to an entry in `properties.floor_plans` jsonb)
-- `storage_path text not null`, `alt_text text`, `sort_order int default 0`, `created_at`
-- Indexes: `property_id`, `(property_id, category)`
+1. Subscribe to `supabase.auth.onAuthStateChange` first (per platform rules), then call `getSession()`.
+2. If no session → redirect to `/admin/login`.
+3. Call `getUser()` to re-validate against the auth server, then query `user_roles` for `role='admin'` (blocked by RLS for non-admins → treated as unauthorized, sign out, redirect).
+4. While either check is in-flight: render the same full-screen spinner used elsewhere. Never flash protected content, never redirect prematurely.
 
-**Trigger** — `update_updated_at_column()` (reused if already present) → `BEFORE UPDATE ON properties`.
+`AdminShell` renders a top bar: "OCDG Admin" wordmark, current user email, "Sign out" button (`supabase.auth.signOut()` → `/admin/login`). Children render inside a max-width container.
 
-**GRANTs** (in the migration, before RLS):
-- `properties`: `SELECT` to `anon, authenticated`; `ALL` to `service_role`. No insert/update/delete to `anon`/`authenticated` — admin writes go through `authenticated` role and are gated by RLS, so also grant `INSERT, UPDATE, DELETE` to `authenticated`.
-- `property_images`: same pattern as `properties`.
-- `user_roles`: `SELECT` to `authenticated` only, `ALL` to `service_role`.
+## 3. Data hooks — `src/hooks/admin/`
 
-### 2. RLS policies (per-operation, defensive)
+React Query is already installed but unused; wire it up here only.
 
-**`properties`** — RLS enabled:
-- `SELECT` for `anon, authenticated` — `USING (published = true)`
-- `SELECT` for `authenticated` (admin bypass) — `USING (public.is_admin())`
-- `INSERT` for `authenticated` — `WITH CHECK (public.is_admin())`
-- `UPDATE` for `authenticated` — `USING (public.is_admin()) WITH CHECK (public.is_admin())`
-- `DELETE` for `authenticated` — `USING (public.is_admin())`
+- `useProperties()` — list of all rows (published + drafts), joined with `card` image URL via `getPublicUrl`.
+- `useProperty(id)` — full row + all `property_images` for the form.
+- `useUpdatePropertyStatus()` — optimistic mutation, rolls back and toasts on error.
+- `useUpsertProperty()` — insert/update wrapper.
+- `useDeleteProperty()` — deletes storage objects first, then DB rows (see §7).
+- `useSlugAvailability(slug, excludeId?)` — debounced uniqueness check that pings `properties` before save; never relies on catching the DB unique-constraint error.
 
-**`property_images`** — RLS enabled:
-- `SELECT` for `anon, authenticated` — `USING (EXISTS (SELECT 1 FROM properties p WHERE p.id = property_id AND p.published = true))`
-- `SELECT` / `INSERT` / `UPDATE` / `DELETE` for `authenticated` gated by `public.is_admin()` (mirrors the `properties` pattern; INSERT/UPDATE also validate that `property_id` exists in WITH CHECK)
+All mutations invalidate `["admin-properties"]` and, where relevant, `["admin-property", id]`.
 
-**`user_roles`** — RLS enabled:
-- `SELECT` for `authenticated` — `USING (public.is_admin())`
-- No INSERT/UPDATE/DELETE policies → writes are impossible from any client. Admin provisioning happens via SQL (service role) only.
+## 4. Property list — `src/pages/admin/AdminProperties.tsx`
 
-### 3. Storage bucket
+Layout:
 
-Create `property-images` — **public read** (marketing images on the public site).
-
-RLS policies on `storage.objects` scoped to `bucket_id = 'property-images'`:
-- Public `SELECT` — handled by bucket being public
-- `INSERT` / `UPDATE` / `DELETE` for `authenticated` — `USING/WITH CHECK (public.is_admin())`
-
-### 4. Supabase auth configuration
-
-Call `configure_auth`:
-- `disable_signup: true` (public signup off — admins created manually)
-- `auto_confirm_email: true` (so manually-created admins can log in without an email flow)
-- `external_anonymous_users_enabled: false`
-- `password_hibp_enabled: true`
-
-### 5. Admin login page
-
-New files, no edits to existing components:
-
-- `src/pages/admin/AdminLogin.tsx` — email + password + submit. Styled with the site's design tokens from `src/index.css` (serif headings, charcoal text, subtle borders, cream/ivory background). No signup link, no "create account" link, no password reset link. On success → `navigate('/admin')`. On failure → inline error message.
-- `src/App.tsx` — add exactly one line inside `<Routes>` (above the catch-all): `<Route path="/admin/login" element={<AdminLogin />} />` with a `lazy(...)` import at the top. Nothing else changes.
-
-Sign-in flow uses the existing `@/integrations/supabase/client`. After `signInWithPassword` succeeds, we verify the account is actually an admin by selecting from `user_roles` (blocked for non-admins by RLS → treated as "not authorized" and we sign them back out). `/admin` itself is not built in this step; visiting it will 404 until Step 2.
-
-### 6. Creating the first admin
-
-Since public signup is disabled, the user creates the first admin via **Cloud → Users → Add user** (email + password, mark email confirmed). Then, in the SQL editor on Cloud, run:
-
-```sql
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('<paste the new user id>', 'admin');
+```text
+┌ AdminShell ────────────────────────────────────┐
+│  Properties           [+ Add New Property]     │
+│  Search…       [ All | Coming | Active | UC | Sold ]
+│  ┌────────────────────────────────────────────┐│
+│  │ img | Title | Price | Status▼ | Pub | Date | Edit ││
+│  └────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
 ```
 
-I'll include this exact snippet in the completion message along with a link to open the backend.
+- Card thumbnail from `property_images` where `category = 'card'` (fallback: skeleton placeholder).
+- Status column is a shadcn `Select` bound to `useUpdatePropertyStatus` — one click, optimistic, toast on success, rollback + toast.error on failure. Values: `coming_soon | active | under_contract | sold`.
+- Status badge palette (labels + Tailwind classes, mirrors the visual convention in `src/lib/currentProjects.ts`):
+  - `coming_soon` → "Coming Soon" · `bg-slate-200 text-slate-800`
+  - `active` → "Active Listing" · `bg-emerald-500 text-white`
+  - `under_contract` → "Under Contract" · `bg-amber-600 text-white`
+  - `sold` → "Sold" · `bg-slate-500 text-white`
+- Published column: shadcn `Switch` (also optimistic).
+- Filter tabs + title search filter client-side over the already-fetched list.
+- Empty state (`properties.length === 0` after fetch): centered message + primary "Add New Property" button.
 
----
+## 5. Property form — `src/pages/admin/AdminPropertyForm.tsx`
 
-### Technical notes
+Single component for both `new` and `edit`. `react-hook-form` (already in deps) + `zod` for validation. Sections rendered as shadcn `Card`s with clear headers.
 
-- `is_admin()` is `SECURITY DEFINER` with `SET search_path = public` — required to prevent RLS recursion when `user_roles` policies also call it, and to avoid search-path hijacking.
-- Storage policies go on `storage.objects`, not `storage.buckets` (per platform rules).
-- The `authenticated` role gets broad table grants; RLS + `is_admin()` is what actually restricts writes. This is the standard Supabase pattern.
-- Nothing in `src/lib/propertyData.ts`, `src/lib/currentProjects.ts`, or any existing page is touched.
+### Basics
+- `title`, `unit` (optional), `slug` (auto-generated from title on change while user hasn't manually edited it; slugify → lowercase, hyphens, url-safe; live uniqueness check + inline error), `status` (Select), `price` (free text), `listed_date` (date input), `published` (Switch).
 
-### Deliverable after apply
+### Copy
+- `headline`, `tagline`, `description` (Textarea), `location_highlight`.
 
-I will confirm:
-1. Tables created: `properties`, `property_images`, `user_roles` (+ `app_role` enum, `is_admin()` function, `update_updated_at_column` trigger)
-2. RLS policies on each table (listed per-operation)
-3. Storage bucket `property-images` + its object policies
-4. Auth settings applied
-5. The exact two-step snippet for creating the first admin
+### Details
+- `bedrooms`, `full_baths`, `half_baths`, `total_rooms`, `sqft` (all optional integers), `location_neighborhood`, `location_city` (default `Ocean City`), `location_state` (default `NJ`).
+
+### Images (fixed-slot uploader, §6)
+Slot groups with the exact counts from the standard package:
+
+- Hero — 1
+- Card thumbnail — 1
+- Exterior renderings — 3 required + "Add more" button
+- Close-up exterior — 3 required + "Add more"
+- Interior renderings — 6 required + "Add more"
+
+Each slot: click or drag-drop, upload progress bar, preview, alt text input (auto-prefilled `"{title} - {category label}"`), Replace, Remove. Reorder within a category via up/down buttons (updates `sort_order`).
+
+### Floor Plans (repeatable, `properties.floor_plans` jsonb + `property_images` with `category='floor_plan'`)
+Each row:
+- `id` (uuid generated client-side, stored in the jsonb entry AND on the linked image row as `floor_plan_id`)
+- `name` (e.g. "Ground Level")
+- Image upload → `category='floor_plan'`, `floor_plan_id = row.id`
+- `description`
+- `highlights` — add/remove short strings
+- Drag-to-reorder rows
+
+### Specs (`properties.specs` jsonb)
+Repeatable rows: `icon` (Select of `elevator | appliances | floors | resilience | pool | fireplace | kitchen | deck`), `title`, `description`.
+
+### Features
+- `luxury_features` and `location_features` — two independent string lists with add / remove / reorder.
+
+### Behavior
+- `beforeunload` guard + in-app `<Prompt>` equivalent (`useBlocker`) when `formState.isDirty`.
+- Save flow: validate → uniqueness check → upsert `properties` row → diff `property_images` rows (insert new, update changed alt/sort/floor_plan_id, delete removed) → success toast → invalidate queries → stay on page (edit) or navigate to `/admin/properties/:id/edit` (new).
+- Delete button (edit mode only): shadcn `AlertDialog` confirmation → `useDeleteProperty` (§7).
+
+## 6. Image processing & upload — `src/lib/admin/imageUpload.ts`
+
+Pure browser pipeline, no server function:
+
+1. Read file → decode via `createImageBitmap`.
+2. Compute target long-edge: 800px for `card`, 2400px for everything else. Skip resize if already smaller.
+3. Draw to `OffscreenCanvas` (fallback: hidden `<canvas>`) → `canvas.convertToBlob({ type: 'image/jpeg', quality: 0.8 })`.
+4. Upload to `property-images` at `${slug}/${category}/${crypto.randomUUID()}.jpg` via `supabase.storage.from('property-images').upload(...)` with `cacheControl: '31536000', contentType: 'image/jpeg', upsert: false`.
+5. Progress reported via `onUploadProgress` (v2 API) → per-slot progress bar.
+6. On success: insert/update `property_images` row with `storage_path`, `category`, `alt_text`, `sort_order`, `floor_plan_id?`.
+7. On failure: keep slot in error state with a Retry button; nothing is written to the DB and no orphan is created.
+8. Public URL for previews: `supabase.storage.from('property-images').getPublicUrl(storage_path).data.publicUrl`. `storage.list()` is never called anywhere.
+
+## 7. Deletion — zero orphans
+
+For every path that removes an image, the storage object is deleted before (or immediately after) the DB row:
+
+- Removing / replacing a single slot in the form: `storage.remove([old_path])` → then delete/update the `property_images` row.
+- Deleting an entire property (`useDeleteProperty`):
+  1. Fetch all `storage_path`s for the property from `property_images`.
+  2. `storage.from('property-images').remove(paths)` in one call (chunked to 100 if needed).
+  3. `DELETE FROM properties WHERE id = ?` — `property_images` rows disappear via `ON DELETE CASCADE`.
+  4. Toast success. On storage-delete failure: abort DB delete and toast error, so the row is never orphaned in reverse either.
+
+Removing a floor-plan row also deletes its linked `property_images` object.
+
+## 8. Files created
+
+```text
+src/App.tsx                                     (edit: add 3 admin routes)
+src/components/admin/AdminProtected.tsx
+src/components/admin/AdminShell.tsx
+src/components/admin/StatusBadge.tsx
+src/components/admin/StatusSelect.tsx
+src/components/admin/ImageSlot.tsx
+src/components/admin/ImageSlotGroup.tsx
+src/components/admin/FloorPlanEditor.tsx
+src/components/admin/SpecsEditor.tsx
+src/components/admin/StringListEditor.tsx
+src/hooks/admin/useAdminAuth.ts
+src/hooks/admin/useProperties.ts
+src/hooks/admin/useProperty.ts
+src/hooks/admin/useUpsertProperty.ts
+src/hooks/admin/useDeleteProperty.ts
+src/hooks/admin/useSlugAvailability.ts
+src/hooks/admin/useUnsavedChangesGuard.ts
+src/lib/admin/status.ts             (status labels + badge classes)
+src/lib/admin/slug.ts               (slugify helper)
+src/lib/admin/imageUpload.ts        (resize + upload pipeline)
+src/lib/admin/schema.ts             (zod schemas for the form)
+src/pages/admin/AdminProperties.tsx
+src/pages/admin/AdminPropertyForm.tsx
+```
+
+## 9. Explicitly out of scope for this step
+
+- No dynamic public property page (Step 3).
+- No changes to `src/App.tsx` beyond the three added routes.
+- No changes to any `src/lib/currentProjects.ts`, `src/lib/pastProjects.ts`, or any existing page/component.
+- No new DB migrations — Step 1's schema is used as-is.
+- No leads view (deferred until we intentionally add its RLS policy).
+
+## 10. Technical notes
+
+- React Query client is already provided at the app root; no changes needed there.
+- Auth check pattern: `onAuthStateChange` first, then `getSession`; `getUser` re-validates before trusting the id in the `user_roles` lookup.
+- All admin data mutations go through the `authenticated` role and are gated by RLS + `is_admin()` — no service key is ever used from the browser.
+- Storage uploads rely on the admin-only INSERT/UPDATE/DELETE policies on `storage.objects` established in Step 1; public reads work via the CDN path.
+- Client-side image pipeline uses `createImageBitmap` + `OffscreenCanvas` (widely supported in evergreen browsers) with a `<canvas>` fallback — this is where 1.5MB originals become ~150–400KB JPEGs before they ever hit the network.

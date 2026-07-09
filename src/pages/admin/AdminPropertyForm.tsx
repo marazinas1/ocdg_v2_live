@@ -1,0 +1,1119 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams, useBeforeUnload } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Trash2, Plus, X, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
+
+import AdminProtected from "@/components/admin/AdminProtected";
+import StringListEditor from "@/components/admin/StringListEditor";
+import SpecsEditor, { SpecItem } from "@/components/admin/SpecsEditor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+import { supabase } from "@/integrations/supabase/client";
+import { useProperty } from "@/hooks/admin/useProperty";
+import { useSlugAvailability } from "@/hooks/admin/useSlugAvailability";
+import { useDeleteProperty } from "@/hooks/admin/useDeleteProperty";
+import {
+  ImageCategory,
+  deleteStorageObjects,
+  getPublicUrl,
+  uploadImage,
+} from "@/lib/admin/imageUpload";
+import { isValidSlug, slugify } from "@/lib/admin/slug";
+import {
+  PROPERTY_STATUSES,
+  STATUS_LABELS,
+  type PropertyStatus,
+} from "@/lib/admin/status";
+
+type FloorPlan = {
+  id: string;
+  name: string;
+  description: string;
+  highlights: string[];
+};
+
+type ExistingImage = {
+  id: string;
+  category: string;
+  floor_plan_id: string | null;
+  storage_path: string;
+  alt_text: string | null;
+  sort_order: number;
+};
+
+type ImageSlot =
+  // Existing DB row (may have alt/order mutations).
+  | {
+      kind: "existing";
+      dbId: string;
+      storage_path: string;
+      alt_text: string;
+      sort_order: number;
+      category: ImageCategory;
+      floor_plan_id: string | null;
+    }
+  // Pending upload (File in memory, no DB row yet).
+  | {
+      kind: "pending";
+      localId: string;
+      file: File;
+      previewUrl: string;
+      alt_text: string;
+      sort_order: number;
+      category: ImageCategory;
+      floor_plan_id: string | null;
+    };
+
+const FIXED_GROUPS: {
+  category: Exclude<ImageCategory, "floor_plan">;
+  label: string;
+  required: number;
+  allowExtra: boolean;
+}[] = [
+  { category: "hero", label: "Hero", required: 1, allowExtra: false },
+  { category: "card", label: "Card thumbnail", required: 1, allowExtra: false },
+  { category: "exterior", label: "Exterior renderings", required: 3, allowExtra: true },
+  { category: "exterior_closeup", label: "Close-up exterior", required: 3, allowExtra: true },
+  { category: "interior", label: "Interior renderings", required: 6, allowExtra: true },
+];
+
+const CATEGORY_LABELS: Record<ImageCategory, string> = {
+  hero: "Hero",
+  card: "Card",
+  exterior: "Exterior",
+  exterior_closeup: "Exterior close-up",
+  interior: "Interior",
+  floor_plan: "Floor plan",
+};
+
+function newLocalId() {
+  return crypto.randomUUID();
+}
+
+function ImageSlotBox({
+  slot,
+  onFile,
+  onRemove,
+  onAltChange,
+  onMove,
+  uploading,
+  title,
+  altPrefill,
+}: {
+  slot: ImageSlot | null;
+  onFile: (file: File) => void;
+  onRemove: () => void;
+  onAltChange: (alt: string) => void;
+  onMove?: (dir: -1 | 1) => void;
+  uploading: boolean;
+  title: string;
+  altPrefill: string;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const src =
+    slot?.kind === "existing"
+      ? getPublicUrl(slot.storage_path)
+      : slot?.kind === "pending"
+      ? slot.previewUrl
+      : null;
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) onFile(file);
+  };
+
+  return (
+    <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
+      <div className="text-xs font-medium text-slate-600">{title}</div>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => inputRef.current?.click()}
+        className={
+          "aspect-[4/3] rounded border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer transition " +
+          (dragOver ? "border-slate-900 bg-slate-50" : "border-slate-200 bg-slate-50 hover:bg-slate-100")
+        }
+      >
+        {uploading ? (
+          <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
+        ) : src ? (
+          <img src={src} alt={slot?.alt_text ?? ""} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-xs text-slate-400">Click or drop image</span>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFile(file);
+          e.target.value = "";
+        }}
+      />
+      {slot && (
+        <>
+          <Input
+            value={slot.alt_text}
+            placeholder={altPrefill}
+            onChange={(e) => onAltChange(e.target.value)}
+            className="text-xs"
+          />
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1">
+              {onMove && (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => onMove(-1)}
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => onMove(1)}
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-700"
+              onClick={onRemove}
+            >
+              <X className="w-3.5 h-3.5 mr-1" />
+              Remove
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function FormInner() {
+  const { id } = useParams<{ id: string }>();
+  const isEdit = !!id;
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { data: existing, isLoading } = useProperty(id);
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [unit, setUnit] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [status, setStatus] = useState<PropertyStatus>("coming_soon");
+  const [price, setPrice] = useState("");
+  const [listedDate, setListedDate] = useState("");
+  const [published, setPublished] = useState(false);
+
+  const [headline, setHeadline] = useState("");
+  const [tagline, setTagline] = useState("");
+  const [description, setDescription] = useState("");
+  const [locationHighlight, setLocationHighlight] = useState("");
+
+  const [bedrooms, setBedrooms] = useState<string>("");
+  const [fullBaths, setFullBaths] = useState<string>("");
+  const [halfBaths, setHalfBaths] = useState<string>("");
+  const [totalRooms, setTotalRooms] = useState<string>("");
+  const [sqft, setSqft] = useState<string>("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [city, setCity] = useState("Ocean City");
+  const [state, setState] = useState("NJ");
+
+  const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
+  const [specs, setSpecs] = useState<SpecItem[]>([]);
+  const [luxuryFeatures, setLuxuryFeatures] = useState<string[]>([]);
+  const [locationFeatures, setLocationFeatures] = useState<string[]>([]);
+
+  const [slotsByCategory, setSlotsByCategory] = useState<Record<string, ImageSlot[]>>({
+    hero: [],
+    card: [],
+    exterior: [],
+    exterior_closeup: [],
+    interior: [],
+    floor_plan: [],
+  });
+
+  // Deleted rows to remove from storage/db on save.
+  const [deletedStoragePaths, setDeletedStoragePaths] = useState<string[]>([]);
+  const [deletedDbIds, setDeletedDbIds] = useState<string[]>([]);
+
+  const [dirty, setDirty] = useState(false);
+  const markDirty = () => setDirty(true);
+
+  const [saving, setSaving] = useState(false);
+
+  // Slug uniqueness
+  const slugState = useSlugAvailability(slug, id);
+
+  // Load existing property
+  useEffect(() => {
+    if (!existing) return;
+    const p = existing.property;
+    setTitle(p.title ?? "");
+    setUnit(p.unit ?? "");
+    setSlug(p.slug ?? "");
+    setSlugTouched(true);
+    setStatus((p.status as PropertyStatus) ?? "coming_soon");
+    setPrice(p.price ?? "");
+    setListedDate(p.listed_date ?? "");
+    setPublished(!!p.published);
+    setHeadline(p.headline ?? "");
+    setTagline(p.tagline ?? "");
+    setDescription(p.description ?? "");
+    setLocationHighlight(p.location_highlight ?? "");
+    setBedrooms(p.bedrooms?.toString() ?? "");
+    setFullBaths(p.full_baths?.toString() ?? "");
+    setHalfBaths(p.half_baths?.toString() ?? "");
+    setTotalRooms(p.total_rooms?.toString() ?? "");
+    setSqft(p.sqft?.toString() ?? "");
+    setNeighborhood(p.location_neighborhood ?? "");
+    setCity(p.location_city ?? "Ocean City");
+    setState(p.location_state ?? "NJ");
+
+    const fps = Array.isArray(p.floor_plans) ? (p.floor_plans as any[]) : [];
+    setFloorPlans(
+      fps.map((f) => ({
+        id: f.id ?? newLocalId(),
+        name: f.name ?? "",
+        description: f.description ?? "",
+        highlights: Array.isArray(f.highlights) ? f.highlights : [],
+      })),
+    );
+    const sp = Array.isArray(p.specs) ? (p.specs as any[]) : [];
+    setSpecs(
+      sp.map((s) => ({
+        icon: s.icon ?? "kitchen",
+        title: s.title ?? "",
+        description: s.description ?? "",
+      })),
+    );
+    setLuxuryFeatures(Array.isArray(p.luxury_features) ? (p.luxury_features as string[]) : []);
+    setLocationFeatures(Array.isArray(p.location_features) ? (p.location_features as string[]) : []);
+
+    // Group images by category
+    const grouped: Record<string, ImageSlot[]> = {
+      hero: [],
+      card: [],
+      exterior: [],
+      exterior_closeup: [],
+      interior: [],
+      floor_plan: [],
+    };
+    const rows: ExistingImage[] = existing.images as any;
+    for (const img of rows) {
+      const slot: ImageSlot = {
+        kind: "existing",
+        dbId: img.id,
+        storage_path: img.storage_path,
+        alt_text: img.alt_text ?? "",
+        sort_order: img.sort_order,
+        category: img.category as ImageCategory,
+        floor_plan_id: img.floor_plan_id,
+      };
+      grouped[img.category]?.push(slot);
+    }
+    for (const k of Object.keys(grouped)) {
+      grouped[k].sort((a, b) => a.sort_order - b.sort_order);
+    }
+    setSlotsByCategory(grouped);
+    setDirty(false);
+  }, [existing]);
+
+  // Auto-slug from title while user hasn't touched slug.
+  useEffect(() => {
+    if (!slugTouched && title) {
+      setSlug(slugify(title));
+    }
+  }, [title, slugTouched]);
+
+  // Warn on navigation
+  useBeforeUnload(
+    useMemo(
+      () => (e: BeforeUnloadEvent) => {
+        if (dirty && !saving) {
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      },
+      [dirty, saving],
+    ),
+  );
+
+  // Slot helpers
+  const setCategorySlots = (cat: string, slots: ImageSlot[]) => {
+    setSlotsByCategory((prev) => ({ ...prev, [cat]: slots }));
+    markDirty();
+  };
+
+  const removeSlotAt = (cat: string, index: number) => {
+    const cur = slotsByCategory[cat] ?? [];
+    const removed = cur[index];
+    if (!removed) return;
+    if (removed.kind === "existing") {
+      setDeletedStoragePaths((p) => [...p, removed.storage_path]);
+      setDeletedDbIds((p) => [...p, removed.dbId]);
+    } else {
+      URL.revokeObjectURL(removed.previewUrl);
+    }
+    setCategorySlots(
+      cat,
+      cur.filter((_, i) => i !== index),
+    );
+  };
+
+  const addPendingFile = (
+    cat: ImageCategory,
+    file: File,
+    floor_plan_id: string | null = null,
+  ) => {
+    const cur = slotsByCategory[cat] ?? [];
+    const slot: ImageSlot = {
+      kind: "pending",
+      localId: newLocalId(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      alt_text: "",
+      sort_order: cur.length,
+      category: cat,
+      floor_plan_id,
+    };
+    setCategorySlots(cat, [...cur, slot]);
+  };
+
+  const replaceSlot = (cat: string, index: number, file: File) => {
+    const cur = slotsByCategory[cat] ?? [];
+    const old = cur[index];
+    if (!old) return;
+    if (old.kind === "existing") {
+      setDeletedStoragePaths((p) => [...p, old.storage_path]);
+      setDeletedDbIds((p) => [...p, old.dbId]);
+    } else {
+      URL.revokeObjectURL(old.previewUrl);
+    }
+    const slot: ImageSlot = {
+      kind: "pending",
+      localId: newLocalId(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      alt_text: old.alt_text,
+      sort_order: old.sort_order,
+      category: old.category,
+      floor_plan_id: old.floor_plan_id,
+    };
+    const next = [...cur];
+    next[index] = slot;
+    setCategorySlots(cat, next);
+  };
+
+  const updateSlotAlt = (cat: string, index: number, alt: string) => {
+    const cur = slotsByCategory[cat] ?? [];
+    const s = cur[index];
+    if (!s) return;
+    const next = [...cur];
+    next[index] = { ...s, alt_text: alt } as ImageSlot;
+    setCategorySlots(cat, next);
+  };
+
+  const moveSlot = (cat: string, index: number, dir: -1 | 1) => {
+    const cur = slotsByCategory[cat] ?? [];
+    const j = index + dir;
+    if (j < 0 || j >= cur.length) return;
+    const next = [...cur];
+    [next[index], next[j]] = [next[j], next[index]];
+    setCategorySlots(cat, next);
+  };
+
+  // Floor plan row helpers
+  const addFloorPlan = () => {
+    setFloorPlans((f) => [
+      ...f,
+      { id: newLocalId(), name: "", description: "", highlights: [] },
+    ]);
+    markDirty();
+  };
+  const updateFloorPlan = (id: string, patch: Partial<FloorPlan>) => {
+    setFloorPlans((f) => f.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+    markDirty();
+  };
+  const removeFloorPlan = (id: string) => {
+    // Also remove any linked floor_plan image slots.
+    const linked = (slotsByCategory.floor_plan ?? []).filter((s) => s.floor_plan_id === id);
+    for (const s of linked) {
+      if (s.kind === "existing") {
+        setDeletedStoragePaths((p) => [...p, s.storage_path]);
+        setDeletedDbIds((p) => [...p, s.dbId]);
+      } else {
+        URL.revokeObjectURL(s.previewUrl);
+      }
+    }
+    setSlotsByCategory((prev) => ({
+      ...prev,
+      floor_plan: (prev.floor_plan ?? []).filter((s) => s.floor_plan_id !== id),
+    }));
+    setFloorPlans((f) => f.filter((row) => row.id !== id));
+    markDirty();
+  };
+  const moveFloorPlan = (id: string, dir: -1 | 1) => {
+    setFloorPlans((f) => {
+      const idx = f.findIndex((r) => r.id === id);
+      const j = idx + dir;
+      if (idx < 0 || j < 0 || j >= f.length) return f;
+      const next = [...f];
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
+    });
+    markDirty();
+  };
+
+  const floorPlanImageFor = (fpId: string): ImageSlot | undefined =>
+    (slotsByCategory.floor_plan ?? []).find((s) => s.floor_plan_id === fpId);
+
+  const setFloorPlanImage = (fpId: string, file: File) => {
+    const existing = floorPlanImageFor(fpId);
+    if (existing) {
+      // Replace
+      const cur = slotsByCategory.floor_plan ?? [];
+      const idx = cur.indexOf(existing);
+      replaceSlot("floor_plan", idx, file);
+    } else {
+      addPendingFile("floor_plan", file, fpId);
+    }
+  };
+
+  const removeFloorPlanImage = (fpId: string) => {
+    const existing = floorPlanImageFor(fpId);
+    if (!existing) return;
+    const cur = slotsByCategory.floor_plan ?? [];
+    const idx = cur.indexOf(existing);
+    removeSlotAt("floor_plan", idx);
+  };
+
+  // Save
+  const canSave =
+    title.trim().length > 0 &&
+    isValidSlug(slug) &&
+    (slugState.status === "available" ||
+      (isEdit && existing?.property.slug === slug));
+
+  const handleSave = async () => {
+    if (saving) return;
+    if (!canSave) {
+      toast.error("Fix validation errors first");
+      return;
+    }
+    setSaving(true);
+    try {
+      // 1. Upsert property row
+      const payload = {
+        title: title.trim(),
+        unit: unit || null,
+        slug: slug.trim(),
+        status,
+        price: price || null,
+        listed_date: listedDate || null,
+        published,
+        headline: headline || null,
+        tagline: tagline || null,
+        description: description || null,
+        location_highlight: locationHighlight || null,
+        bedrooms: bedrooms ? parseInt(bedrooms, 10) : null,
+        full_baths: fullBaths ? parseInt(fullBaths, 10) : null,
+        half_baths: halfBaths ? parseInt(halfBaths, 10) : null,
+        total_rooms: totalRooms ? parseInt(totalRooms, 10) : null,
+        sqft: sqft ? parseInt(sqft, 10) : null,
+        location_neighborhood: neighborhood || null,
+        location_city: city || null,
+        location_state: state || null,
+        floor_plans: floorPlans as any,
+        specs: specs as any,
+        luxury_features: luxuryFeatures as any,
+        location_features: locationFeatures as any,
+      };
+
+      let propertyId = id;
+      if (isEdit && id) {
+        const { error } = await supabase
+          .from("properties")
+          .update(payload)
+          .eq("id", id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("properties")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        propertyId = data.id;
+      }
+      if (!propertyId) throw new Error("No property id after save");
+
+      // 2. Delete removed images from storage + db.
+      if (deletedStoragePaths.length) {
+        await deleteStorageObjects(deletedStoragePaths);
+      }
+      if (deletedDbIds.length) {
+        const { error } = await supabase
+          .from("property_images")
+          .delete()
+          .in("id", deletedDbIds);
+        if (error) throw error;
+      }
+
+      // 3. Upload pending files, then insert rows. Update existing rows for alt/sort/floor_plan changes.
+      const allSlots: ImageSlot[] = Object.values(slotsByCategory).flat();
+      const uploadedRows: {
+        property_id: string;
+        category: string;
+        storage_path: string;
+        alt_text: string | null;
+        sort_order: number;
+        floor_plan_id: string | null;
+      }[] = [];
+
+      // Assign sort order per-category based on array position.
+      const positionByCategory: Record<string, number> = {};
+      for (const cat of Object.keys(slotsByCategory)) {
+        slotsByCategory[cat].forEach((slot, index) => {
+          positionByCategory[`${cat}:${index}`] = index;
+        });
+      }
+
+      for (const cat of Object.keys(slotsByCategory)) {
+        const cur = slotsByCategory[cat] ?? [];
+        for (let i = 0; i < cur.length; i++) {
+          const slot = cur[i];
+          if (slot.kind === "pending") {
+            const { storage_path } = await uploadImage({
+              file: slot.file,
+              category: slot.category,
+              slug: slug.trim(),
+            });
+            uploadedRows.push({
+              property_id: propertyId,
+              category: slot.category,
+              storage_path,
+              alt_text:
+                slot.alt_text ||
+                `${title.trim()} - ${CATEGORY_LABELS[slot.category]}`,
+              sort_order: i,
+              floor_plan_id: slot.floor_plan_id,
+            });
+          } else if (slot.kind === "existing") {
+            // Update if changed
+            const { error } = await supabase
+              .from("property_images")
+              .update({
+                alt_text:
+                  slot.alt_text ||
+                  `${title.trim()} - ${CATEGORY_LABELS[slot.category]}`,
+                sort_order: i,
+                floor_plan_id: slot.floor_plan_id,
+              })
+              .eq("id", slot.dbId);
+            if (error) throw error;
+          }
+        }
+      }
+
+      if (uploadedRows.length) {
+        const { error } = await supabase.from("property_images").insert(uploadedRows);
+        if (error) throw error;
+      }
+
+      toast.success("Saved");
+      setDeletedStoragePaths([]);
+      setDeletedDbIds([]);
+      setDirty(false);
+      qc.invalidateQueries({ queryKey: ["admin-properties"] });
+      qc.invalidateQueries({ queryKey: ["admin-property", propertyId] });
+      if (!isEdit) {
+        navigate(`/admin/properties/${propertyId}/edit`, { replace: true });
+      }
+    } catch (err: any) {
+      toast.error(`Save failed: ${err?.message ?? "unknown error"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteMutation = useDeleteProperty();
+  const handleDelete = async () => {
+    if (!id) return;
+    await deleteMutation.mutateAsync(id);
+    navigate("/admin", { replace: true });
+  };
+
+  if (isEdit && isLoading) {
+    return <div className="py-16 text-center text-slate-500">Loading…</div>;
+  }
+
+  const slugError =
+    slug && !isValidSlug(slug)
+      ? "Slug must be lowercase alphanumerics separated by hyphens."
+      : slugState.status === "taken"
+      ? "This slug is already in use."
+      : null;
+
+  return (
+    <div className="space-y-6 pb-32">
+      <div className="flex items-center justify-between">
+        <div>
+          <button
+            type="button"
+            onClick={() => navigate("/admin")}
+            className="text-sm text-slate-500 hover:text-slate-900"
+          >
+            ← Back to properties
+          </button>
+          <h1 className="text-2xl font-semibold text-slate-900 mt-2">
+            {isEdit ? "Edit property" : "New property"}
+          </h1>
+        </div>
+        <div className="flex gap-2">
+          {isEdit && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-red-600">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this property?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove the property and all its images. This
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button onClick={handleSave} disabled={saving || !canSave}>
+            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isEdit ? "Save changes" : "Create property"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Basics */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Basics</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Title *</Label>
+            <Input
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                markDirty();
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Unit</Label>
+            <Input value={unit} onChange={(e) => { setUnit(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Slug *</Label>
+            <Input
+              value={slug}
+              onChange={(e) => {
+                setSlug(e.target.value);
+                setSlugTouched(true);
+                markDirty();
+              }}
+            />
+            {slugError && <p className="text-xs text-red-600">{slugError}</p>}
+            {slugState.status === "available" && slug && (
+              <p className="text-xs text-emerald-600">Slug is available.</p>
+            )}
+            {slugState.status === "checking" && (
+              <p className="text-xs text-slate-500">Checking…</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={status} onValueChange={(v) => { setStatus(v as PropertyStatus); markDirty(); }}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROPERTY_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Price</Label>
+            <Input
+              value={price}
+              placeholder="$2,995,000 or From $1,995,000"
+              onChange={(e) => { setPrice(e.target.value); markDirty(); }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Listed date</Label>
+            <Input
+              type="date"
+              value={listedDate}
+              onChange={(e) => { setListedDate(e.target.value); markDirty(); }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Published</Label>
+            <div className="flex items-center h-10">
+              <Switch checked={published} onCheckedChange={(v) => { setPublished(v); markDirty(); }} />
+              <span className="ml-3 text-sm text-slate-600">
+                {published ? "Visible on the public site" : "Draft"}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Copy */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Copy</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Headline</Label>
+            <Input value={headline} onChange={(e) => { setHeadline(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Tagline</Label>
+            <Input value={tagline} onChange={(e) => { setTagline(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea rows={6} value={description} onChange={(e) => { setDescription(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Location highlight</Label>
+            <Input value={locationHighlight} onChange={(e) => { setLocationHighlight(e.target.value); markDirty(); }} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Details</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Bedrooms</Label>
+            <Input type="number" value={bedrooms} onChange={(e) => { setBedrooms(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Full baths</Label>
+            <Input type="number" value={fullBaths} onChange={(e) => { setFullBaths(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Half baths</Label>
+            <Input type="number" value={halfBaths} onChange={(e) => { setHalfBaths(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Total rooms</Label>
+            <Input type="number" value={totalRooms} onChange={(e) => { setTotalRooms(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Sqft</Label>
+            <Input type="number" value={sqft} onChange={(e) => { setSqft(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Neighborhood</Label>
+            <Input value={neighborhood} onChange={(e) => { setNeighborhood(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>City</Label>
+            <Input value={city} onChange={(e) => { setCity(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>State</Label>
+            <Input value={state} onChange={(e) => { setState(e.target.value); markDirty(); }} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Images</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {FIXED_GROUPS.map((group) => {
+            const cur = slotsByCategory[group.category] ?? [];
+            const showAdd = group.allowExtra || cur.length < group.required;
+            const slotCount = Math.max(cur.length, group.required);
+            const items: (ImageSlot | null)[] = [];
+            for (let i = 0; i < slotCount; i++) items.push(cur[i] ?? null);
+            return (
+              <div key={group.category}>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">
+                  {group.label} · {cur.length}/{group.required}
+                  {group.allowExtra ? "+" : ""}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {items.map((slot, i) => (
+                    <ImageSlotBox
+                      key={i}
+                      slot={slot}
+                      title={`${group.label} ${i + 1}`}
+                      altPrefill={`${title || "Property"} - ${group.label}`}
+                      uploading={false}
+                      onFile={(file) => {
+                        if (slot) replaceSlot(group.category, i, file);
+                        else addPendingFile(group.category, file);
+                      }}
+                      onRemove={() => removeSlotAt(group.category, i)}
+                      onAltChange={(alt) => updateSlotAlt(group.category, i, alt)}
+                      onMove={
+                        group.allowExtra || group.required > 1
+                          ? (dir) => moveSlot(group.category, i, dir)
+                          : undefined
+                      }
+                    />
+                  ))}
+                  {showAdd && group.allowExtra && (
+                    <button
+                      type="button"
+                      className="aspect-[4/3] border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-50"
+                      onClick={() => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = "image/*";
+                        input.onchange = () => {
+                          const file = input.files?.[0];
+                          if (file) addPendingFile(group.category, file);
+                        };
+                        input.click();
+                      }}
+                    >
+                      <Plus className="w-6 h-6" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Floor Plans */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Floor plans</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {floorPlans.map((fp, idx) => {
+            const img = floorPlanImageFor(fp.id);
+            return (
+              <div
+                key={fp.id}
+                className="border border-slate-200 rounded-lg p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-500">
+                      Level {idx + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => moveFloorPlan(fp.id, -1)}
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => moveFloorPlan(fp.id, 1)}
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => removeFloorPlan(fp.id)}
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Remove level
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label>Name</Label>
+                      <Input
+                        value={fp.name}
+                        placeholder="Ground Level"
+                        onChange={(e) => updateFloorPlan(fp.id, { name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea
+                        rows={3}
+                        value={fp.description}
+                        onChange={(e) =>
+                          updateFloorPlan(fp.id, { description: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Highlights</Label>
+                      <StringListEditor
+                        value={fp.highlights}
+                        onChange={(v) => updateFloorPlan(fp.id, { highlights: v })}
+                        placeholder="e.g. Chef's kitchen"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="mb-2 block">Floor plan image</Label>
+                    <ImageSlotBox
+                      slot={img ?? null}
+                      title={fp.name || `Level ${idx + 1}`}
+                      altPrefill={`${title || "Property"} - ${fp.name || "Floor plan"}`}
+                      uploading={false}
+                      onFile={(file) => setFloorPlanImage(fp.id, file)}
+                      onRemove={() => removeFloorPlanImage(fp.id)}
+                      onAltChange={(alt) => {
+                        const cur = slotsByCategory.floor_plan ?? [];
+                        const idx2 = cur.findIndex((s) => s.floor_plan_id === fp.id);
+                        if (idx2 >= 0) updateSlotAlt("floor_plan", idx2, alt);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <Button type="button" variant="outline" onClick={addFloorPlan}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add floor plan
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Specs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Specs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SpecsEditor value={specs} onChange={(v) => { setSpecs(v); markDirty(); }} />
+        </CardContent>
+      </Card>
+
+      {/* Features */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Features</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label>Luxury features</Label>
+            <StringListEditor
+              value={luxuryFeatures}
+              onChange={(v) => { setLuxuryFeatures(v); markDirty(); }}
+              placeholder="e.g. Chef's kitchen"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Location features</Label>
+            <StringListEditor
+              value={locationFeatures}
+              onChange={(v) => { setLocationFeatures(v); markDirty(); }}
+              placeholder="e.g. Steps to the beach"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving || !canSave}>
+          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isEdit ? "Save changes" : "Create property"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminPropertyForm() {
+  return (
+    <AdminProtected>
+      <FormInner />
+    </AdminProtected>
+  );
+}
