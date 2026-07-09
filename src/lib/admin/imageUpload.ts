@@ -128,6 +128,11 @@ async function listAllUnder(prefix: string): Promise<string[]> {
  * `referenced`. property_images is the source of truth: anything in that set
  * is preserved unconditionally. If listing fails, throws — never interprets
  * a failed list as "no references". Admin-only.
+ *
+ * `referenced` MUST be non-empty. An empty set would mean "delete everything"
+ * — that is a distinct, dangerous operation exposed via `wipePropertyFolder`.
+ * Enforcing non-empty here makes it impossible for a caller that forgot to
+ * pass the just-uploaded paths to accidentally wipe a property's images.
  */
 export async function sweepPropertyFolder(
   slug: string,
@@ -135,8 +140,28 @@ export async function sweepPropertyFolder(
 ): Promise<{ removed: string[] }> {
   const prefix = slug.trim().replace(/^\/+|\/+$/g, "");
   if (!prefix) throw new Error("sweepPropertyFolder: empty slug");
+  if (referenced.size === 0) {
+    throw new Error(
+      "sweepPropertyFolder: referenced set is empty. Use wipePropertyFolder(slug) to delete everything under a slug.",
+    );
+  }
   const all = await listAllUnder(prefix);
   const orphans = all.filter((p) => !referenced.has(p));
   if (orphans.length) await deleteStorageObjects(orphans);
   return { removed: orphans };
+}
+
+/**
+ * Remove every storage object under `<slug>/`. Only for property deletion —
+ * do not call from any flow where property_images rows may still reference
+ * these objects. Admin-only. Throws on list failure.
+ */
+export async function wipePropertyFolder(
+  slug: string,
+): Promise<{ removed: string[] }> {
+  const prefix = slug.trim().replace(/^\/+|\/+$/g, "");
+  if (!prefix) throw new Error("wipePropertyFolder: empty slug");
+  const all = await listAllUnder(prefix);
+  if (all.length) await deleteStorageObjects(all);
+  return { removed: all };
 }

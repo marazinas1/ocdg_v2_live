@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { deleteStorageObjects, sweepPropertyFolder } from "@/lib/admin/imageUpload";
+import { deleteStorageObjects, wipePropertyFolder } from "@/lib/admin/imageUpload";
 import { toast } from "sonner";
 
 export function useDeleteProperty() {
@@ -36,7 +36,7 @@ export function useDeleteProperty() {
      //    point, which is acceptable: the user sees an error and can retry
      //    the sweep via a subsequent action.
       if (slug) {
-        await sweepPropertyFolder(slug, new Set());
+        await wipePropertyFolder(slug);
       }
     },
     onSuccess: () => {
