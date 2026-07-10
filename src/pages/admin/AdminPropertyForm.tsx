@@ -292,9 +292,15 @@ function FormInner() {
   // Slug uniqueness
   const slugState = useSlugAvailability(slug, id);
 
+  // Guard: only initialize from server data ONCE per mount. Any later refetch
+  // (e.g. React Query focus/reconnect) must not overwrite user edits.
+  const initializedRef = useRef(false);
+
   // Load existing property
   useEffect(() => {
     if (!existing) return;
+    if (initializedRef.current) return;
+    initializedRef.current = true;
     const p = existing.property;
     setTitle(p.title ?? "");
     setUnit(p.unit ?? "");
