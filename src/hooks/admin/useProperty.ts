@@ -5,6 +5,8 @@ export function useProperty(id: string | undefined) {
   return useQuery({
     queryKey: ["admin-property", id],
     enabled: !!id,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     queryFn: async () => {
       if (!id) throw new Error("no id");
       const { data: property, error: propErr } = await supabase
