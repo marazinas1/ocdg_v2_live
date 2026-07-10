@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AdminAuthState =
@@ -8,11 +8,17 @@ export type AdminAuthState =
 
 export function useAdminAuth(): AdminAuthState {
   const [state, setState] = useState<AdminAuthState>({ status: "loading" });
+  const stateRef = useRef<AdminAuthState>(state);
+  stateRef.current = state;
 
   useEffect(() => {
     let active = true;
 
-    const check = async () => {
+    // `background` = true means: never flip UI to "loading". Only transition
+    // admin -> unauthorized if the role check fails. This keeps the admin
+    // subtree mounted across TOKEN_REFRESHED events (which fire on tab focus)
+    // and prevents form state from being wiped.
+    const check = async (background = false) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!active) return;
       if (!session) {
@@ -37,21 +43,35 @@ export function useAdminAuth(): AdminAuthState {
         setState({ status: "unauthorized" });
         return;
       }
-      setState({
+      const next: AdminAuthState = {
         status: "admin",
         userId: userData.user.id,
         email: userData.user.email ?? "",
-      });
+      };
+      // Avoid needless re-renders on background re-verify.
+      const prev = stateRef.current;
+      if (
+        background &&
+        prev.status === "admin" &&
+        prev.userId === next.userId &&
+        prev.email === next.email
+      ) {
+        return;
+      }
+      setState(next);
     };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
         setState({ status: "unauthorized" });
-      } else {
-        // Re-verify role on token refresh / sign-in.
-        setState({ status: "loading" });
-        check();
+        return;
       }
+      // Never flip back to "loading" after the initial mount check —
+      // that unmounts the admin subtree and wipes in-flight form state
+      // whenever the browser fires TOKEN_REFRESHED (e.g. on tab focus).
+      // Re-verify the role in the background instead. If the role has been
+      // revoked, `check()` will transition admin -> unauthorized.
+      check(true);
     });
 
     check();
