@@ -906,13 +906,12 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
     email: "",
     phone: "",
     interest: "",
-    message: "",
   });
   const [hp, setHp] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -938,7 +937,7 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
         email: form.email,
         phone: form.phone,
         interest: form.interest || null,
-        message: form.message || null,
+        message: null,
         source,
         user_agent: navigator.userAgent,
       });
@@ -953,7 +952,7 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
             email: form.email,
             phone: form.phone,
             interest: form.interest,
-            message: form.message,
+            message: "",
             source,
           },
         },
@@ -961,7 +960,7 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
       if (error) throw error;
 
       toast.success(`Thank you. Patrick will be in touch regarding ${property.title} shortly.`);
-      setForm({ name: "", email: "", phone: "", interest: "", message: "" });
+      setForm({ name: "", email: "", phone: "", interest: "" });
     } catch (err) {
       console.error(err);
       toast.error(
@@ -1054,24 +1053,6 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
             </option>
           ))}
         </select>
-      </div>
-      <div>
-        <label
-          htmlFor="message"
-          className="block text-xs uppercase tracking-wider text-muted-slate mb-2"
-        >
-          Message <span className="normal-case text-muted-slate/70">(optional)</span>
-        </label>
-        <textarea
-          id="message"
-          name="message"
-          value={form.message}
-          onChange={handleChange}
-          maxLength={1000}
-          rows={4}
-          className="input-elegant resize-none"
-          placeholder="Anything you'd like Patrick to know…"
-        />
       </div>
       <button
         type="submit"
