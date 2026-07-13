@@ -413,7 +413,7 @@ const PropertyPage = () => {
         <section ref={highlightsRef} className="py-10 md:py-14 border-y border-border-subtle bg-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
             <div
-              className={`grid grid-cols-2 sm:grid-cols-${Math.min(highlightCells.length, 4)} gap-6 md:gap-8 transition-all duration-1000 ${
+              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8 transition-all duration-1000 ${
                 highlightsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
