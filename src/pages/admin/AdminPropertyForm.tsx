@@ -261,6 +261,13 @@ function FormInner() {
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [locationHighlight, setLocationHighlight] = useState("");
+  const [locationHeading, setLocationHeading] = useState("");
+  const [mapEmbedQuery, setMapEmbedQuery] = useState("");
+  const [visionHeadline, setVisionHeadline] = useState("");
+  const [visionCaptionEyebrow, setVisionCaptionEyebrow] = useState("");
+  const [visionCaptionTitle, setVisionCaptionTitle] = useState("");
+  const [visionFloors, setVisionFloors] = useState<VisionFloor[]>([]);
+  const [highlights, setHighlights] = useState<HighlightCell[]>([]);
 
   const [bedrooms, setBedrooms] = useState<string>("");
   const [fullBaths, setFullBaths] = useState<string>("");
@@ -279,6 +286,7 @@ function FormInner() {
   const [slotsByCategory, setSlotsByCategory] = useState<Record<string, ImageSlot[]>>({
     hero: [],
     card: [],
+    vision: [],
     exterior: [],
     exterior_closeup: [],
     interior: [],
