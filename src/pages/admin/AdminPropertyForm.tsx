@@ -583,10 +583,40 @@ function FormInner() {
     }
     setSaving(true);
     try {
-      // 1. Delete removed/replaced images from storage FIRST. If this throws we
-      //    abort before touching the DB — no orphans, no half-updated state.
+      // 1. Filter deleted storage paths against any lingering reference.
+      //    Multiple property_images rows may share a storage_path (e.g. the
+      //    hero row that points at the same object as exterior[0], or a
+      //    vision row that reuses an exterior render). Deleting a shared
+      //    object because one referencing row was removed would break the
+      //    others. A path is safe to delete only when NO other row
+      //    references it — in this form's kept slots or in property_images
+      //    (any property) after the pending row deletions are applied.
+      let pathsToDelete: string[] = [];
       if (deletedStoragePaths.length) {
-        await deleteStorageObjects(deletedStoragePaths);
+        const unique = Array.from(new Set(deletedStoragePaths));
+        const keptInForm = new Set<string>();
+        for (const cat of Object.keys(slotsByCategory)) {
+          for (const s of slotsByCategory[cat] ?? []) {
+            if (s.kind === "existing") keptInForm.add(s.storage_path);
+          }
+        }
+        const candidates = unique.filter((p) => !keptInForm.has(p));
+        const stillRef = new Set<string>();
+        if (candidates.length) {
+          const { data: refs, error: refErr } = await supabase
+            .from("property_images")
+            .select("id,storage_path")
+            .in("storage_path", candidates);
+          if (refErr) throw refErr;
+          const doomedIds = new Set(deletedDbIds);
+          for (const r of refs ?? []) {
+            if (!doomedIds.has(r.id)) stillRef.add(r.storage_path);
+          }
+        }
+        pathsToDelete = candidates.filter((p) => !stillRef.has(p));
+      }
+      if (pathsToDelete.length) {
+        await deleteStorageObjects(pathsToDelete);
       }
 
       // 2. Upsert property row
