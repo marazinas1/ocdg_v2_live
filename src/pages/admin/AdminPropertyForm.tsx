@@ -57,6 +57,9 @@ type FloorPlan = {
   highlights: string[];
 };
 
+type HighlightCell = { value: string; label: string };
+type VisionFloor = { label: string; body: string };
+
 type ExistingImage = {
   id: string;
   category: string;
@@ -97,6 +100,7 @@ const FIXED_GROUPS: {
 }[] = [
   { category: "hero", label: "Hero", required: 1, allowExtra: false },
   { category: "card", label: "Card thumbnail", required: 1, allowExtra: false },
+  { category: "vision", label: "Vision image", required: 1, allowExtra: false },
   { category: "exterior", label: "Exterior renderings", required: 3, allowExtra: true },
   { category: "exterior_closeup", label: "Close-up exterior", required: 3, allowExtra: true },
   { category: "interior", label: "Interior renderings", required: 6, allowExtra: true },
