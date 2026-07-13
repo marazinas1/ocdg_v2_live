@@ -251,18 +251,47 @@ const PropertyPage = () => {
       ? `${property.full_baths}${property.half_baths ? `.${property.half_baths}` : ""}`
       : null;
 
-  const highlightCells: Array<{ value: string; label: string }> = [];
-  if (property.bedrooms != null) highlightCells.push({ value: String(property.bedrooms), label: "Bedrooms" });
-  if (bathTotal) highlightCells.push({ value: bathTotal, label: "Bathrooms" });
-  if (property.total_rooms != null) highlightCells.push({ value: String(property.total_rooms), label: "Total Rooms" });
-  if (property.sqft != null) highlightCells.push({ value: property.sqft.toLocaleString(), label: "Sq Ft" });
+  // Bar bathrooms use full + half*0.5 (e.g. 5 + 1*0.5 = "5.5"), faithful to
+  // the static HighlightsBar. The Vision mini-card below still uses the
+  // "full.half" shorthand ("5.1") — also faithful to the static pages.
+  const bathBar =
+    property.full_baths != null
+      ? (() => {
+          const v = property.full_baths + (property.half_baths ?? 0) * 0.5;
+          return Number.isInteger(v) ? String(v) : v.toString();
+        })()
+      : null;
+
+  const derivedHighlights: Array<{ value: string; label: string }> = [];
+  if (property.bedrooms != null)
+    derivedHighlights.push({ value: String(property.bedrooms), label: "Bedrooms" });
+  if (bathBar) derivedHighlights.push({ value: bathBar, label: "Bathrooms" });
+  if (property.total_rooms != null)
+    derivedHighlights.push({ value: String(property.total_rooms), label: "Total Rooms" });
+  if (property.sqft != null)
+    derivedHighlights.push({ value: property.sqft.toLocaleString(), label: "Sq Ft" });
+
+  const highlightCells: Array<{ value: string; label: string }> =
+    property.highlights && property.highlights.length > 0
+      ? property.highlights
+      : derivedHighlights;
 
   const locationLine = [property.location_neighborhood, property.location_city]
     .filter(Boolean)
     .join(" · ");
 
   const heroUrl = heroImage ? publicUrl(heroImage.storage_path) : null;
-  const visionImage = exteriorImages[0] ?? interiorImages[0] ?? null;
+  const visionImage: GalleryImage | null = visionImageRow
+    ? {
+        src: publicUrl(visionImageRow.storage_path),
+        alt: visionImageRow.alt_text ?? property.title,
+      }
+    : exteriorImages[0] ?? interiorImages[0] ?? null;
+  const visionFloors = property.vision_floors ?? [];
+  const visionHeadline =
+    property.vision_headline ?? property.headline ?? property.title;
+  const locationHeading =
+    property.location_heading ?? property.location_highlight ?? "The Setting";
 
   const seoDescription =
     property.tagline ??
