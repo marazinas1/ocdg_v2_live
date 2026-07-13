@@ -327,6 +327,19 @@ function FormInner() {
     setTagline(p.tagline ?? "");
     setDescription(p.description ?? "");
     setLocationHighlight(p.location_highlight ?? "");
+    setLocationHeading((p as any).location_heading ?? "");
+    setMapEmbedQuery((p as any).map_embed_query ?? "");
+    setVisionHeadline((p as any).vision_headline ?? "");
+    setVisionCaptionEyebrow((p as any).vision_caption_eyebrow ?? "");
+    setVisionCaptionTitle((p as any).vision_caption_title ?? "");
+    const vf = Array.isArray((p as any).vision_floors) ? ((p as any).vision_floors as any[]) : [];
+    setVisionFloors(
+      vf.map((f) => ({ label: f.label ?? "", body: f.body ?? "" })),
+    );
+    const hl = Array.isArray((p as any).highlights) ? ((p as any).highlights as any[]) : [];
+    setHighlights(
+      hl.map((h) => ({ value: h.value ?? "", label: h.label ?? "" })),
+    );
     setBedrooms(p.bedrooms?.toString() ?? "");
     setFullBaths(p.full_baths?.toString() ?? "");
     setHalfBaths(p.half_baths?.toString() ?? "");
@@ -360,6 +373,7 @@ function FormInner() {
     const grouped: Record<string, ImageSlot[]> = {
       hero: [],
       card: [],
+      vision: [],
       exterior: [],
       exterior_closeup: [],
       interior: [],
