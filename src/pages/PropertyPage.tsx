@@ -43,6 +43,13 @@ type PropertyRow = {
   location_city: string | null;
   location_state: string | null;
   location_highlight: string | null;
+  location_heading: string | null;
+  highlights: Array<{ value: string; label: string }> | null;
+  vision_headline: string | null;
+  vision_floors: Array<{ label: string; body: string }> | null;
+  vision_caption_eyebrow: string | null;
+  vision_caption_title: string | null;
+  map_embed_query: string | null;
   specs: Array<{ icon: string; title: string; description: string }> | null;
   floor_plans:
     | Array<{
