@@ -57,6 +57,9 @@ type FloorPlan = {
   highlights: string[];
 };
 
+type HighlightCell = { value: string; label: string };
+type VisionFloor = { label: string; body: string };
+
 type ExistingImage = {
   id: string;
   category: string;
@@ -97,6 +100,7 @@ const FIXED_GROUPS: {
 }[] = [
   { category: "hero", label: "Hero", required: 1, allowExtra: false },
   { category: "card", label: "Card thumbnail", required: 1, allowExtra: false },
+  { category: "vision", label: "Vision image", required: 1, allowExtra: false },
   { category: "exterior", label: "Exterior renderings", required: 3, allowExtra: true },
   { category: "exterior_closeup", label: "Close-up exterior", required: 3, allowExtra: true },
   { category: "interior", label: "Interior renderings", required: 6, allowExtra: true },
@@ -108,6 +112,7 @@ const CATEGORY_LABELS: Record<ImageCategory, string> = {
   exterior: "Exterior",
   exterior_closeup: "Exterior close-up",
   interior: "Interior",
+  vision: "Vision",
   floor_plan: "Floor plan",
 };
 
@@ -256,6 +261,13 @@ function FormInner() {
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [locationHighlight, setLocationHighlight] = useState("");
+  const [locationHeading, setLocationHeading] = useState("");
+  const [mapEmbedQuery, setMapEmbedQuery] = useState("");
+  const [visionHeadline, setVisionHeadline] = useState("");
+  const [visionCaptionEyebrow, setVisionCaptionEyebrow] = useState("");
+  const [visionCaptionTitle, setVisionCaptionTitle] = useState("");
+  const [visionFloors, setVisionFloors] = useState<VisionFloor[]>([]);
+  const [highlights, setHighlights] = useState<HighlightCell[]>([]);
 
   const [bedrooms, setBedrooms] = useState<string>("");
   const [fullBaths, setFullBaths] = useState<string>("");
@@ -274,6 +286,7 @@ function FormInner() {
   const [slotsByCategory, setSlotsByCategory] = useState<Record<string, ImageSlot[]>>({
     hero: [],
     card: [],
+    vision: [],
     exterior: [],
     exterior_closeup: [],
     interior: [],
@@ -314,6 +327,19 @@ function FormInner() {
     setTagline(p.tagline ?? "");
     setDescription(p.description ?? "");
     setLocationHighlight(p.location_highlight ?? "");
+    setLocationHeading((p as any).location_heading ?? "");
+    setMapEmbedQuery((p as any).map_embed_query ?? "");
+    setVisionHeadline((p as any).vision_headline ?? "");
+    setVisionCaptionEyebrow((p as any).vision_caption_eyebrow ?? "");
+    setVisionCaptionTitle((p as any).vision_caption_title ?? "");
+    const vf = Array.isArray((p as any).vision_floors) ? ((p as any).vision_floors as any[]) : [];
+    setVisionFloors(
+      vf.map((f) => ({ label: f.label ?? "", body: f.body ?? "" })),
+    );
+    const hl = Array.isArray((p as any).highlights) ? ((p as any).highlights as any[]) : [];
+    setHighlights(
+      hl.map((h) => ({ value: h.value ?? "", label: h.label ?? "" })),
+    );
     setBedrooms(p.bedrooms?.toString() ?? "");
     setFullBaths(p.full_baths?.toString() ?? "");
     setHalfBaths(p.half_baths?.toString() ?? "");
@@ -347,6 +373,7 @@ function FormInner() {
     const grouped: Record<string, ImageSlot[]> = {
       hero: [],
       card: [],
+      vision: [],
       exterior: [],
       exterior_closeup: [],
       interior: [],
@@ -556,10 +583,40 @@ function FormInner() {
     }
     setSaving(true);
     try {
-      // 1. Delete removed/replaced images from storage FIRST. If this throws we
-      //    abort before touching the DB — no orphans, no half-updated state.
+      // 1. Filter deleted storage paths against any lingering reference.
+      //    Multiple property_images rows may share a storage_path (e.g. the
+      //    hero row that points at the same object as exterior[0], or a
+      //    vision row that reuses an exterior render). Deleting a shared
+      //    object because one referencing row was removed would break the
+      //    others. A path is safe to delete only when NO other row
+      //    references it — in this form's kept slots or in property_images
+      //    (any property) after the pending row deletions are applied.
+      let pathsToDelete: string[] = [];
       if (deletedStoragePaths.length) {
-        await deleteStorageObjects(deletedStoragePaths);
+        const unique = Array.from(new Set(deletedStoragePaths));
+        const keptInForm = new Set<string>();
+        for (const cat of Object.keys(slotsByCategory)) {
+          for (const s of slotsByCategory[cat] ?? []) {
+            if (s.kind === "existing") keptInForm.add(s.storage_path);
+          }
+        }
+        const candidates = unique.filter((p) => !keptInForm.has(p));
+        const stillRef = new Set<string>();
+        if (candidates.length) {
+          const { data: refs, error: refErr } = await supabase
+            .from("property_images")
+            .select("id,storage_path")
+            .in("storage_path", candidates);
+          if (refErr) throw refErr;
+          const doomedIds = new Set(deletedDbIds);
+          for (const r of refs ?? []) {
+            if (!doomedIds.has(r.id)) stillRef.add(r.storage_path);
+          }
+        }
+        pathsToDelete = candidates.filter((p) => !stillRef.has(p));
+      }
+      if (pathsToDelete.length) {
+        await deleteStorageObjects(pathsToDelete);
       }
 
       // 2. Upsert property row
@@ -575,6 +632,13 @@ function FormInner() {
         tagline: tagline || null,
         description: description || null,
         location_highlight: locationHighlight || null,
+        location_heading: locationHeading || null,
+        map_embed_query: mapEmbedQuery || null,
+        vision_headline: visionHeadline || null,
+        vision_caption_eyebrow: visionCaptionEyebrow || null,
+        vision_caption_title: visionCaptionTitle || null,
+        vision_floors: visionFloors.filter((f) => f.label.trim() || f.body.trim()) as any,
+        highlights: highlights.filter((h) => h.value.trim() || h.label.trim()) as any,
         bedrooms: bedrooms ? parseInt(bedrooms, 10) : null,
         full_baths: fullBaths ? parseInt(fullBaths, 10) : null,
         half_baths: halfBaths ? parseInt(halfBaths, 10) : null,
@@ -886,6 +950,215 @@ function FormInner() {
           <div className="space-y-2">
             <Label>Location highlight</Label>
             <Input value={locationHighlight} onChange={(e) => { setLocationHighlight(e.target.value); markDirty(); }} />
+          </div>
+          <div className="space-y-2">
+            <Label>Location heading</Label>
+            <Input
+              placeholder="e.g. Life in Baylandings"
+              value={locationHeading}
+              onChange={(e) => { setLocationHeading(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Bespoke "Life in …" heading for the Location section. Falls back to Location highlight.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Map embed query</Label>
+            <Input
+              placeholder="e.g. 3213 Bayland Dr, Ocean City, NJ"
+              value={mapEmbedQuery}
+              onChange={(e) => { setMapEmbedQuery(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Address for the Google Maps embed. Leave empty to hide the map.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Vision section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Vision section</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Vision headline</Label>
+            <Input
+              placeholder="e.g. A Bayside Coastal Residence"
+              value={visionHeadline}
+              onChange={(e) => { setVisionHeadline(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Bespoke Vision heading. Falls back to Headline, then Title.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Caption eyebrow</Label>
+              <Input
+                placeholder="e.g. Baylandings"
+                value={visionCaptionEyebrow}
+                onChange={(e) => { setVisionCaptionEyebrow(e.target.value); markDirty(); }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Caption title</Label>
+              <Input
+                placeholder="e.g. Bayside Residence"
+                value={visionCaptionTitle}
+                onChange={(e) => { setVisionCaptionTitle(e.target.value); markDirty(); }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Floor-by-floor prose</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setVisionFloors((v) => [...v, { label: "", body: "" }]);
+                  markDirty();
+                }}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                Add floor
+              </Button>
+            </div>
+            {visionFloors.length === 0 && (
+              <p className="text-xs text-slate-500">
+                Empty falls back to the plain Description paragraph.
+              </p>
+            )}
+            <div className="space-y-3">
+              {visionFloors.map((f, i) => (
+                <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Ground Floor"
+                      value={f.label}
+                      onChange={(e) => {
+                        const next = [...visionFloors];
+                        next[i] = { ...next[i], label: e.target.value };
+                        setVisionFloors(next);
+                        markDirty();
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setVisionFloors((v) => v.filter((_, j) => j !== i));
+                        markDirty();
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <Textarea
+                    rows={3}
+                    placeholder="Entry foyer, attached two-car garage…"
+                    value={f.body}
+                    onChange={(e) => {
+                      const next = [...visionFloors];
+                      next[i] = { ...next[i], body: e.target.value };
+                      setVisionFloors(next);
+                      markDirty();
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Highlights bar */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Highlights bar</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-slate-500">
+            Cells shown in the strip below the hero. Empty falls back to
+            Bedrooms / Bathrooms / Total Rooms / Sqft.
+          </p>
+          <div className="space-y-2">
+            {highlights.map((h, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  placeholder="Value"
+                  value={h.value}
+                  onChange={(e) => {
+                    const next = [...highlights];
+                    next[i] = { ...next[i], value: e.target.value };
+                    setHighlights(next);
+                    markDirty();
+                  }}
+                />
+                <Input
+                  placeholder="Label"
+                  value={h.label}
+                  onChange={(e) => {
+                    const next = [...highlights];
+                    next[i] = { ...next[i], label: e.target.value };
+                    setHighlights(next);
+                    markDirty();
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setHighlights((v) => v.filter((_, j) => j !== i));
+                    markDirty();
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setHighlights((v) => [...v, { value: "", label: "" }]);
+                markDirty();
+              }}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add cell
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const derived: HighlightCell[] = [];
+                if (bedrooms) derived.push({ value: bedrooms, label: "Bedrooms" });
+                if (fullBaths) {
+                  const half = halfBaths ? parseInt(halfBaths, 10) : 0;
+                  const full = parseInt(fullBaths, 10);
+                  const v = full + half * 0.5;
+                  derived.push({
+                    value: Number.isInteger(v) ? String(v) : v.toString(),
+                    label: "Bathrooms",
+                  });
+                }
+                if (totalRooms) derived.push({ value: totalRooms, label: "Total Rooms" });
+                setHighlights(derived);
+                markDirty();
+              }}
+            >
+              Prefill from numeric fields
+            </Button>
           </div>
         </CardContent>
       </Card>

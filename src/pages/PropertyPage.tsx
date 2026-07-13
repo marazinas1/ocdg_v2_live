@@ -43,6 +43,13 @@ type PropertyRow = {
   location_city: string | null;
   location_state: string | null;
   location_highlight: string | null;
+  location_heading: string | null;
+  highlights: Array<{ value: string; label: string }> | null;
+  vision_headline: string | null;
+  vision_floors: Array<{ label: string; body: string }> | null;
+  vision_caption_eyebrow: string | null;
+  vision_caption_title: string | null;
+  map_embed_query: string | null;
   specs: Array<{ icon: string; title: string; description: string }> | null;
   floor_plans:
     | Array<{
@@ -156,6 +163,8 @@ const PropertyPage = () => {
   }));
   const allGallery = [...exteriorImages, ...interiorImages];
 
+  const visionImageRow = grouped.vision?.[0] ?? null;
+
   const floorPlans = property?.floor_plans ?? [];
   const floorPlanImageBy = useMemo(() => {
     const map: Record<string, string> = {};
@@ -242,18 +251,47 @@ const PropertyPage = () => {
       ? `${property.full_baths}${property.half_baths ? `.${property.half_baths}` : ""}`
       : null;
 
-  const highlightCells: Array<{ value: string; label: string }> = [];
-  if (property.bedrooms != null) highlightCells.push({ value: String(property.bedrooms), label: "Bedrooms" });
-  if (bathTotal) highlightCells.push({ value: bathTotal, label: "Bathrooms" });
-  if (property.total_rooms != null) highlightCells.push({ value: String(property.total_rooms), label: "Total Rooms" });
-  if (property.sqft != null) highlightCells.push({ value: property.sqft.toLocaleString(), label: "Sq Ft" });
+  // Bar bathrooms use full + half*0.5 (e.g. 5 + 1*0.5 = "5.5"), faithful to
+  // the static HighlightsBar. The Vision mini-card below still uses the
+  // "full.half" shorthand ("5.1") — also faithful to the static pages.
+  const bathBar =
+    property.full_baths != null
+      ? (() => {
+          const v = property.full_baths + (property.half_baths ?? 0) * 0.5;
+          return Number.isInteger(v) ? String(v) : v.toString();
+        })()
+      : null;
+
+  const derivedHighlights: Array<{ value: string; label: string }> = [];
+  if (property.bedrooms != null)
+    derivedHighlights.push({ value: String(property.bedrooms), label: "Bedrooms" });
+  if (bathBar) derivedHighlights.push({ value: bathBar, label: "Bathrooms" });
+  if (property.total_rooms != null)
+    derivedHighlights.push({ value: String(property.total_rooms), label: "Total Rooms" });
+  if (property.sqft != null)
+    derivedHighlights.push({ value: property.sqft.toLocaleString(), label: "Sq Ft" });
+
+  const highlightCells: Array<{ value: string; label: string }> =
+    property.highlights && property.highlights.length > 0
+      ? property.highlights
+      : derivedHighlights;
 
   const locationLine = [property.location_neighborhood, property.location_city]
     .filter(Boolean)
     .join(" · ");
 
   const heroUrl = heroImage ? publicUrl(heroImage.storage_path) : null;
-  const visionImage = exteriorImages[0] ?? interiorImages[0] ?? null;
+  const visionImage: GalleryImage | null = visionImageRow
+    ? {
+        src: publicUrl(visionImageRow.storage_path),
+        alt: visionImageRow.alt_text ?? property.title,
+      }
+    : exteriorImages[0] ?? interiorImages[0] ?? null;
+  const visionFloors = property.vision_floors ?? [];
+  const visionHeadline =
+    property.vision_headline ?? property.headline ?? property.title;
+  const locationHeading =
+    property.location_heading ?? property.location_highlight ?? "The Setting";
 
   const seoDescription =
     property.tagline ??
@@ -375,7 +413,7 @@ const PropertyPage = () => {
         <section ref={highlightsRef} className="py-10 md:py-14 border-y border-border-subtle bg-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
             <div
-              className={`grid grid-cols-2 sm:grid-cols-${Math.min(highlightCells.length, 4)} gap-6 md:gap-8 transition-all duration-1000 ${
+              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8 transition-all duration-1000 ${
                 highlightsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
@@ -391,7 +429,7 @@ const PropertyPage = () => {
       )}
 
       {/* Vision */}
-      {(property.description || property.headline || visionImage) && (
+      {(property.description || property.headline || visionImage || visionFloors.length > 0) && (
         <section id="vision" className="section-padding">
           <div ref={visionRef} className="container mx-auto px-6 lg:px-12">
             <div
@@ -402,7 +440,7 @@ const PropertyPage = () => {
               <div className="order-2 lg:order-1">
                 <p className="label-uppercase mb-4">The Vision</p>
                 <h2 className="heading-section text-charcoal mb-6">
-                  {property.headline ?? property.title}
+                  {visionHeadline}
                 </h2>
                 <div className="divider mb-8" />
                 {(property.bedrooms != null || bathTotal || property.total_rooms != null) && (
@@ -425,9 +463,17 @@ const PropertyPage = () => {
                     </div>
                   </div>
                 )}
-                {property.description && (
+                {visionFloors.length > 0 ? (
+                  <div className="space-y-6">
+                    {visionFloors.map((f, i) => (
+                      <p key={i} className="text-body">
+                        <strong className="text-charcoal">{f.label}:</strong> {f.body}
+                      </p>
+                    ))}
+                  </div>
+                ) : property.description ? (
                   <p className="text-body whitespace-pre-line">{property.description}</p>
-                )}
+                ) : null}
               </div>
               {visionImage && (
                 <div className="order-1 lg:order-2">
@@ -439,6 +485,22 @@ const PropertyPage = () => {
                       loading="lazy"
                       decoding="async"
                     />
+                    {(property.vision_caption_eyebrow || property.vision_caption_title) && (
+                      <div className="absolute -bottom-6 -left-6 w-40 h-24 border border-border bg-white flex items-center justify-center p-4">
+                        <div className="text-center">
+                          {property.vision_caption_eyebrow && (
+                            <p className="text-xs uppercase tracking-wider text-muted-slate mb-1">
+                              {property.vision_caption_eyebrow}
+                            </p>
+                          )}
+                          {property.vision_caption_title && (
+                            <p className="text-sm font-serif text-charcoal">
+                              {property.vision_caption_title}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -724,17 +786,36 @@ const PropertyPage = () => {
       )}
 
       {/* Location features */}
-      {property.location_features && property.location_features.length > 0 && (
+      {((property.location_features && property.location_features.length > 0) ||
+        property.map_embed_query) && (
         <section id="location" className="section-padding">
           <div ref={locationRef} className="container mx-auto px-6 lg:px-12 max-w-7xl">
             <div
-              className={`max-w-3xl transition-all duration-1000 ${
+              className={`grid ${property.map_embed_query ? "lg:grid-cols-2" : ""} gap-12 items-center transition-all duration-1000 ${
                 locationVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
+              {property.map_embed_query && (
+                <div className="relative h-[400px] lg:h-[500px] bg-muted">
+                  <iframe
+                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(
+                      property.map_embed_query,
+                    )}`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="grayscale contrast-125"
+                    title={`${property.title} location`}
+                  />
+                </div>
+              )}
+              <div>
               <p className="label-uppercase mb-4">The Location</p>
               <h2 className="heading-section text-charcoal mb-6">
-                {property.location_highlight ?? "The Setting"}
+                {locationHeading}
               </h2>
               <div className="divider mb-8" />
               {(property.location_city || property.location_state) && (
@@ -748,6 +829,7 @@ const PropertyPage = () => {
                   </div>
                 </div>
               )}
+              {property.location_features && property.location_features.length > 0 && (
               <ul className="space-y-4">
                 {property.location_features.map((f, i) => (
                   <li key={i} className="flex items-start gap-4">
@@ -756,6 +838,8 @@ const PropertyPage = () => {
                   </li>
                 ))}
               </ul>
+              )}
+              </div>
             </div>
           </div>
         </section>
@@ -822,13 +906,12 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
     email: "",
     phone: "",
     interest: "",
-    message: "",
   });
   const [hp, setHp] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -854,7 +937,7 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
         email: form.email,
         phone: form.phone,
         interest: form.interest || null,
-        message: form.message || null,
+        message: null,
         source,
         user_agent: navigator.userAgent,
       });
@@ -869,7 +952,7 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
             email: form.email,
             phone: form.phone,
             interest: form.interest,
-            message: form.message,
+            message: "",
             source,
           },
         },
@@ -877,7 +960,7 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
       if (error) throw error;
 
       toast.success(`Thank you. Patrick will be in touch regarding ${property.title} shortly.`);
-      setForm({ name: "", email: "", phone: "", interest: "", message: "" });
+      setForm({ name: "", email: "", phone: "", interest: "" });
     } catch (err) {
       console.error(err);
       toast.error(
@@ -970,24 +1053,6 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
             </option>
           ))}
         </select>
-      </div>
-      <div>
-        <label
-          htmlFor="message"
-          className="block text-xs uppercase tracking-wider text-muted-slate mb-2"
-        >
-          Message <span className="normal-case text-muted-slate/70">(optional)</span>
-        </label>
-        <textarea
-          id="message"
-          name="message"
-          value={form.message}
-          onChange={handleChange}
-          maxLength={1000}
-          rows={4}
-          className="input-elegant resize-none"
-          placeholder="Anything you'd like Patrick to know…"
-        />
       </div>
       <button
         type="submit"
