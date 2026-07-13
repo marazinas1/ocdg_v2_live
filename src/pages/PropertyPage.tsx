@@ -786,17 +786,36 @@ const PropertyPage = () => {
       )}
 
       {/* Location features */}
-      {property.location_features && property.location_features.length > 0 && (
+      {((property.location_features && property.location_features.length > 0) ||
+        property.map_embed_query) && (
         <section id="location" className="section-padding">
           <div ref={locationRef} className="container mx-auto px-6 lg:px-12 max-w-7xl">
             <div
-              className={`max-w-3xl transition-all duration-1000 ${
+              className={`grid ${property.map_embed_query ? "lg:grid-cols-2" : ""} gap-12 items-center transition-all duration-1000 ${
                 locationVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
+              {property.map_embed_query && (
+                <div className="relative h-[400px] lg:h-[500px] bg-muted">
+                  <iframe
+                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(
+                      property.map_embed_query,
+                    )}`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="grayscale contrast-125"
+                    title={`${property.title} location`}
+                  />
+                </div>
+              )}
+              <div>
               <p className="label-uppercase mb-4">The Location</p>
               <h2 className="heading-section text-charcoal mb-6">
-                {property.location_highlight ?? "The Setting"}
+                {locationHeading}
               </h2>
               <div className="divider mb-8" />
               {(property.location_city || property.location_state) && (
@@ -810,6 +829,7 @@ const PropertyPage = () => {
                   </div>
                 </div>
               )}
+              {property.location_features && property.location_features.length > 0 && (
               <ul className="space-y-4">
                 {property.location_features.map((f, i) => (
                   <li key={i} className="flex items-start gap-4">
@@ -818,6 +838,8 @@ const PropertyPage = () => {
                   </li>
                 ))}
               </ul>
+              )}
+              </div>
             </div>
           </div>
         </section>
