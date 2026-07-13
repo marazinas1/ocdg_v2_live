@@ -951,6 +951,215 @@ function FormInner() {
             <Label>Location highlight</Label>
             <Input value={locationHighlight} onChange={(e) => { setLocationHighlight(e.target.value); markDirty(); }} />
           </div>
+          <div className="space-y-2">
+            <Label>Location heading</Label>
+            <Input
+              placeholder="e.g. Life in Baylandings"
+              value={locationHeading}
+              onChange={(e) => { setLocationHeading(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Bespoke "Life in …" heading for the Location section. Falls back to Location highlight.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Map embed query</Label>
+            <Input
+              placeholder="e.g. 3213 Bayland Dr, Ocean City, NJ"
+              value={mapEmbedQuery}
+              onChange={(e) => { setMapEmbedQuery(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Address for the Google Maps embed. Leave empty to hide the map.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Vision section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Vision section</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Vision headline</Label>
+            <Input
+              placeholder="e.g. A Bayside Coastal Residence"
+              value={visionHeadline}
+              onChange={(e) => { setVisionHeadline(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Bespoke Vision heading. Falls back to Headline, then Title.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Caption eyebrow</Label>
+              <Input
+                placeholder="e.g. Baylandings"
+                value={visionCaptionEyebrow}
+                onChange={(e) => { setVisionCaptionEyebrow(e.target.value); markDirty(); }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Caption title</Label>
+              <Input
+                placeholder="e.g. Bayside Residence"
+                value={visionCaptionTitle}
+                onChange={(e) => { setVisionCaptionTitle(e.target.value); markDirty(); }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Floor-by-floor prose</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setVisionFloors((v) => [...v, { label: "", body: "" }]);
+                  markDirty();
+                }}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                Add floor
+              </Button>
+            </div>
+            {visionFloors.length === 0 && (
+              <p className="text-xs text-slate-500">
+                Empty falls back to the plain Description paragraph.
+              </p>
+            )}
+            <div className="space-y-3">
+              {visionFloors.map((f, i) => (
+                <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Ground Floor"
+                      value={f.label}
+                      onChange={(e) => {
+                        const next = [...visionFloors];
+                        next[i] = { ...next[i], label: e.target.value };
+                        setVisionFloors(next);
+                        markDirty();
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setVisionFloors((v) => v.filter((_, j) => j !== i));
+                        markDirty();
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <Textarea
+                    rows={3}
+                    placeholder="Entry foyer, attached two-car garage…"
+                    value={f.body}
+                    onChange={(e) => {
+                      const next = [...visionFloors];
+                      next[i] = { ...next[i], body: e.target.value };
+                      setVisionFloors(next);
+                      markDirty();
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Highlights bar */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Highlights bar</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-slate-500">
+            Cells shown in the strip below the hero. Empty falls back to
+            Bedrooms / Bathrooms / Total Rooms / Sqft.
+          </p>
+          <div className="space-y-2">
+            {highlights.map((h, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  placeholder="Value"
+                  value={h.value}
+                  onChange={(e) => {
+                    const next = [...highlights];
+                    next[i] = { ...next[i], value: e.target.value };
+                    setHighlights(next);
+                    markDirty();
+                  }}
+                />
+                <Input
+                  placeholder="Label"
+                  value={h.label}
+                  onChange={(e) => {
+                    const next = [...highlights];
+                    next[i] = { ...next[i], label: e.target.value };
+                    setHighlights(next);
+                    markDirty();
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setHighlights((v) => v.filter((_, j) => j !== i));
+                    markDirty();
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setHighlights((v) => [...v, { value: "", label: "" }]);
+                markDirty();
+              }}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add cell
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const derived: HighlightCell[] = [];
+                if (bedrooms) derived.push({ value: bedrooms, label: "Bedrooms" });
+                if (fullBaths) {
+                  const half = halfBaths ? parseInt(halfBaths, 10) : 0;
+                  const full = parseInt(fullBaths, 10);
+                  const v = full + half * 0.5;
+                  derived.push({
+                    value: Number.isInteger(v) ? String(v) : v.toString(),
+                    label: "Bathrooms",
+                  });
+                }
+                if (totalRooms) derived.push({ value: totalRooms, label: "Total Rooms" });
+                setHighlights(derived);
+                markDirty();
+              }}
+            >
+              Prefill from numeric fields
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
