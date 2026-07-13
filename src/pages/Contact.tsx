@@ -35,13 +35,19 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (hp) return; // honeypot tripped
     if (form.phone.replace(/\D/g, "").length !== 10) {
       toast.error("Please enter a valid US phone number — (555) 000-0000");
       return;
     }
     setSubmitting(true);
     try {
+      // Honeypot tripped — fail safe: show success to the user, skip DB write.
+      if (hp) {
+        toast.success("Thank you — Patrick will be in touch shortly.");
+        setForm({ name: "", email: "", phone: "", interest: "", message: "" });
+        setHp("");
+        return;
+      }
       const id = crypto.randomUUID();
       const { error: insertError } = await supabase.from("leads").insert({
         id,
@@ -155,12 +161,13 @@ const Contact = () => {
                 <form onSubmit={handleSubmit} className="space-y-5 flex-1 flex flex-col">
                   <input
                     type="text"
-                    name="company"
+                    name="lv_hp_field"
                     value={hp}
                     onChange={(e) => setHp(e.target.value)}
                     tabIndex={-1}
-                    autoComplete="off"
+                    autoComplete="new-password"
                     aria-hidden="true"
+                    aria-label="Leave this field empty"
                     style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}
                   />
                   <div>
