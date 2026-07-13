@@ -429,7 +429,7 @@ const PropertyPage = () => {
       )}
 
       {/* Vision */}
-      {(property.description || property.headline || visionImage) && (
+      {(property.description || property.headline || visionImage || visionFloors.length > 0) && (
         <section id="vision" className="section-padding">
           <div ref={visionRef} className="container mx-auto px-6 lg:px-12">
             <div
@@ -440,7 +440,7 @@ const PropertyPage = () => {
               <div className="order-2 lg:order-1">
                 <p className="label-uppercase mb-4">The Vision</p>
                 <h2 className="heading-section text-charcoal mb-6">
-                  {property.headline ?? property.title}
+                  {visionHeadline}
                 </h2>
                 <div className="divider mb-8" />
                 {(property.bedrooms != null || bathTotal || property.total_rooms != null) && (
@@ -463,9 +463,17 @@ const PropertyPage = () => {
                     </div>
                   </div>
                 )}
-                {property.description && (
+                {visionFloors.length > 0 ? (
+                  <div className="space-y-6">
+                    {visionFloors.map((f, i) => (
+                      <p key={i} className="text-body">
+                        <strong className="text-charcoal">{f.label}:</strong> {f.body}
+                      </p>
+                    ))}
+                  </div>
+                ) : property.description ? (
                   <p className="text-body whitespace-pre-line">{property.description}</p>
-                )}
+                ) : null}
               </div>
               {visionImage && (
                 <div className="order-1 lg:order-2">
@@ -477,6 +485,22 @@ const PropertyPage = () => {
                       loading="lazy"
                       decoding="async"
                     />
+                    {(property.vision_caption_eyebrow || property.vision_caption_title) && (
+                      <div className="absolute -bottom-6 -left-6 w-40 h-24 border border-border bg-white flex items-center justify-center p-4">
+                        <div className="text-center">
+                          {property.vision_caption_eyebrow && (
+                            <p className="text-xs uppercase tracking-wider text-muted-slate mb-1">
+                              {property.vision_caption_eyebrow}
+                            </p>
+                          )}
+                          {property.vision_caption_title && (
+                            <p className="text-sm font-serif text-charcoal">
+                              {property.vision_caption_title}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
