@@ -146,14 +146,17 @@ export type Database = {
           full_baths: number | null
           half_baths: number | null
           headline: string | null
+          highlights: Json
           id: string
           listed_date: string | null
           location_city: string | null
           location_features: Json
+          location_heading: string | null
           location_highlight: string | null
           location_neighborhood: string | null
           location_state: string | null
           luxury_features: Json
+          map_embed_query: string | null
           price: string | null
           published: boolean
           slug: string
@@ -166,6 +169,10 @@ export type Database = {
           total_rooms: number | null
           unit: string | null
           updated_at: string
+          vision_caption_eyebrow: string | null
+          vision_caption_title: string | null
+          vision_floors: Json
+          vision_headline: string | null
         }
         Insert: {
           bedrooms?: number | null
@@ -175,14 +182,17 @@ export type Database = {
           full_baths?: number | null
           half_baths?: number | null
           headline?: string | null
+          highlights?: Json
           id?: string
           listed_date?: string | null
           location_city?: string | null
           location_features?: Json
+          location_heading?: string | null
           location_highlight?: string | null
           location_neighborhood?: string | null
           location_state?: string | null
           luxury_features?: Json
+          map_embed_query?: string | null
           price?: string | null
           published?: boolean
           slug: string
@@ -195,6 +205,10 @@ export type Database = {
           total_rooms?: number | null
           unit?: string | null
           updated_at?: string
+          vision_caption_eyebrow?: string | null
+          vision_caption_title?: string | null
+          vision_floors?: Json
+          vision_headline?: string | null
         }
         Update: {
           bedrooms?: number | null
@@ -204,14 +218,17 @@ export type Database = {
           full_baths?: number | null
           half_baths?: number | null
           headline?: string | null
+          highlights?: Json
           id?: string
           listed_date?: string | null
           location_city?: string | null
           location_features?: Json
+          location_heading?: string | null
           location_highlight?: string | null
           location_neighborhood?: string | null
           location_state?: string | null
           luxury_features?: Json
+          map_embed_query?: string | null
           price?: string | null
           published?: boolean
           slug?: string
@@ -224,6 +241,10 @@ export type Database = {
           total_rooms?: number | null
           unit?: string | null
           updated_at?: string
+          vision_caption_eyebrow?: string | null
+          vision_caption_title?: string | null
+          vision_floors?: Json
+          vision_headline?: string | null
         }
         Relationships: []
       }
