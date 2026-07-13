@@ -163,6 +163,8 @@ const PropertyPage = () => {
   }));
   const allGallery = [...exteriorImages, ...interiorImages];
 
+  const visionImageRow = grouped.vision?.[0] ?? null;
+
   const floorPlans = property?.floor_plans ?? [];
   const floorPlanImageBy = useMemo(() => {
     const map: Record<string, string> = {};
