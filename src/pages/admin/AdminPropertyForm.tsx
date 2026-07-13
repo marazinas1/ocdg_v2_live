@@ -108,6 +108,7 @@ const CATEGORY_LABELS: Record<ImageCategory, string> = {
   exterior: "Exterior",
   exterior_closeup: "Exterior close-up",
   interior: "Interior",
+  vision: "Vision",
   floor_plan: "Floor plan",
 };
 
