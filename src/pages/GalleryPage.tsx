@@ -1,22 +1,11 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import GlobalNav from "@/components/GlobalNav";
 import SEO from "@/components/SEO";
 import GlobalFooter from "@/components/GlobalFooter";
 import subpageHero from "@/assets/subpage-hero.jpg";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-
-
-import {
-  type GalleryImage,
-  type ProjectImages,
-  type PhotoProject,
-  projects,
-  photoProjects,
-  renderImages,
-  allImages,
-} from "@/lib/galleryProjects";
-
+import { usePublicGallery, type GalleryImage, type GalleryBlock } from "@/hooks/usePublicGallery";
 
 const PROJECTS_PER_BATCH = 2;
 
@@ -59,46 +48,34 @@ const GalleryTile = ({
 );
 
 /**
- * Renders a single project's 12 images in a collage layout:
- * Row 1: 1 large (2/3) + 2 stacked small (1/3)  — ext[0], ext[1], ext[2]
- * Row 2: 3 equal columns                         — ext[3], ext[4], ext[5]
- * Row 3: 1 full-width hero                       — int[0] (living room)
- * Row 4: 3 equal columns                         — int[1], int[2], int[3]
- * Row 5: 2 equal columns                         — int[4], int[5]
+ * Full 6-exterior + 6-interior collage. Only rendered when the property has both.
  */
 const ProjectCollage = ({
-  project,
+  block,
   globalOffset,
   onImageClick,
 }: {
-  project: ProjectImages;
+  block: GalleryBlock;
   globalOffset: number;
   onImageClick: (globalIndex: number) => void;
 }) => {
-  const ext = project.exterior;
-  const int = project.interior;
-
-  // Calculate global index for a given local position
+  const ext = block.exterior;
+  const int = block.interior;
   const gi = (localIndex: number) => globalOffset + localIndex;
 
   return (
     <div className="mb-16 last:mb-0">
-      {/* Project heading */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 sm:gap-4">
         <div>
           <p className="label-uppercase mb-1">Exterior & Interior</p>
-          <h2 className="heading-section text-charcoal text-xl">{project.name}</h2>
+          <h2 className="heading-section text-charcoal text-xl">{block.name}</h2>
         </div>
-        <Link
-          to={project.link}
-          className="btn-outline text-xs inline-flex flex-shrink-0"
-        >
+        <Link to={block.link} className="btn-outline text-xs inline-flex flex-shrink-0">
           View Project
         </Link>
       </div>
 
       <div className="space-y-3 md:space-y-4">
-        {/* Row 1: 1 large (col-span-2, row-span-2) + 2 stacked */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <div className="col-span-2 md:col-span-2 md:row-span-2">
             <GalleryTile image={ext[0]} aspectClass="aspect-[4/3]" onClick={() => onImageClick(gi(0))} />
@@ -111,7 +88,6 @@ const ProjectCollage = ({
           </div>
         </div>
 
-        {/* Row 2: 3 equal close-shot exteriors */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <div className="col-span-2 md:col-span-1">
             <GalleryTile image={ext[3]} aspectClass="aspect-[16/10] md:aspect-square" onClick={() => onImageClick(gi(3))} />
@@ -120,81 +96,65 @@ const ProjectCollage = ({
           <GalleryTile image={ext[5]} aspectClass="aspect-square" onClick={() => onImageClick(gi(5))} />
         </div>
 
-        {/* Row 3: Full-width interior hero (living room) */}
         <div>
-          <GalleryTile image={int[0]} aspectClass="aspect-[16/10] md:aspect-[21/9]" onClick={() => onImageClick(gi(6))} />
+          <GalleryTile image={int[0]} aspectClass="aspect-[16/10] md:aspect-[21/9]" onClick={() => onImageClick(gi(ext.length))} />
         </div>
 
-        {/* Row 4: 3 interior images */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <div className="col-span-2 md:col-span-1">
-            <GalleryTile image={int[1]} aspectClass="aspect-[4/3] md:aspect-[3/4]" onClick={() => onImageClick(gi(7))} />
+            <GalleryTile image={int[1]} aspectClass="aspect-[4/3] md:aspect-[3/4]" onClick={() => onImageClick(gi(ext.length + 1))} />
           </div>
-          <GalleryTile image={int[2]} aspectClass="aspect-[3/4]" onClick={() => onImageClick(gi(8))} />
-          <GalleryTile image={int[3]} aspectClass="aspect-[3/4]" onClick={() => onImageClick(gi(9))} />
+          <GalleryTile image={int[2]} aspectClass="aspect-[3/4]" onClick={() => onImageClick(gi(ext.length + 2))} />
+          <GalleryTile image={int[3]} aspectClass="aspect-[3/4]" onClick={() => onImageClick(gi(ext.length + 3))} />
         </div>
 
-        {/* Row 5: 2 interior images side by side */}
         <div className="grid grid-cols-2 gap-3 md:gap-4">
-          <GalleryTile image={int[4]} aspectClass="aspect-[4/3]" onClick={() => onImageClick(gi(10))} />
-          <GalleryTile image={int[5]} aspectClass="aspect-[4/3]" onClick={() => onImageClick(gi(11))} />
+          <GalleryTile image={int[4]} aspectClass="aspect-[4/3]" onClick={() => onImageClick(gi(ext.length + 4))} />
+          <GalleryTile image={int[5]} aspectClass="aspect-[4/3]" onClick={() => onImageClick(gi(ext.length + 5))} />
         </div>
       </div>
     </div>
   );
 };
 
-
 /**
- * Renders a sold home's 16 real photographs as a 4×4 grid (responsive).
- * Used for projects with completed photo sessions, in addition to (or instead of) renders.
+ * Uniform grid fallback for properties without the full collage set.
  */
 const PhotoGrid = ({
-  project,
+  block,
   globalOffset,
   onImageClick,
 }: {
-  project: PhotoProject;
+  block: GalleryBlock;
   globalOffset: number;
   onImageClick: (globalIndex: number) => void;
-}) => {
-  return (
-    <div className="mb-16 last:mb-0">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <p className="label-uppercase mb-1">Photography · Sold</p>
-          <h2 className="heading-section text-charcoal text-xl">{project.name}</h2>
-        </div>
-        <Link to={project.link} className="btn-outline text-xs inline-flex flex-shrink-0">
-          View Project
-        </Link>
+}) => (
+  <div className="mb-16 last:mb-0">
+    <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 sm:gap-4">
+      <div>
+        <p className="label-uppercase mb-1">Photography</p>
+        <h2 className="heading-section text-charcoal text-xl">{block.name}</h2>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
-        {project.images.map((image, idx) => {
-          // Mobile rhythm: every 5th image (0, 5, 10, 15) spans full width with cinematic ratio.
-          // On sm+ all images are uniform squares.
-          const isMobileFull = idx % 5 === 0;
-          return (
-            <div
-              key={idx}
-              className={isMobileFull ? "col-span-2 sm:col-span-1" : ""}
-            >
-              <GalleryTile
-                image={image}
-                aspectClass={
-                  isMobileFull
-                    ? "aspect-[16/10] sm:aspect-square"
-                    : "aspect-square"
-                }
-                onClick={() => onImageClick(globalOffset + idx)}
-              />
-            </div>
-          );
-        })}
-      </div>
+      <Link to={block.link} className="btn-outline text-xs inline-flex flex-shrink-0">
+        View Project
+      </Link>
     </div>
-  );
-};
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
+      {block.all.map((image, idx) => {
+        const isMobileFull = idx % 5 === 0;
+        return (
+          <div key={idx} className={isMobileFull ? "col-span-2 sm:col-span-1" : ""}>
+            <GalleryTile
+              image={image}
+              aspectClass={isMobileFull ? "aspect-[16/10] sm:aspect-square" : "aspect-square"}
+              onClick={() => onImageClick(globalOffset + idx)}
+            />
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
 
 const GalleryPage = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -208,17 +168,22 @@ const GalleryPage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Build a unified block list: render-collage + photo-grid blocks in order.
-  // Render projects come first (active listings), then sold/photo homes.
-  type Block =
-    | { kind: "render"; project: ProjectImages; offset: number }
-    | { kind: "photo"; project: PhotoProject; offset: number };
-  const blocks: Block[] = [
-    ...projects.map((p, i) => ({ kind: "render" as const, project: p, offset: i * 12 })),
-    ...photoProjects.map((p, i) => ({ kind: "photo" as const, project: p, offset: renderImages.length + i * 16 })),
-  ];
-  const visibleBlocks = blocks.slice(0, visibleProjectCount);
-  const hasMore = visibleProjectCount < blocks.length;
+  const { data: blocks = [], isLoading } = usePublicGallery();
+
+  const { layoutBlocks, allImages } = useMemo(() => {
+    type Layout = { kind: "render" | "photo"; block: GalleryBlock; offset: number };
+    const layout: Layout[] = [];
+    const flat: GalleryImage[] = [];
+    for (const b of blocks) {
+      const kind: "render" | "photo" = b.exterior.length >= 6 && b.interior.length >= 6 ? "render" : "photo";
+      layout.push({ kind, block: b, offset: flat.length });
+      flat.push(...b.all);
+    }
+    return { layoutBlocks: layout, allImages: flat };
+  }, [blocks]);
+
+  const visibleBlocks = layoutBlocks.slice(0, visibleProjectCount);
+  const hasMore = visibleProjectCount < layoutBlocks.length;
 
   const openLightbox = (index: number) => {
     setCurrentIndex(index);
@@ -231,19 +196,23 @@ const GalleryPage = () => {
     document.body.style.overflow = "";
   };
 
-  const nextImage = () => setCurrentIndex((prev) => (prev + 1) % allImages.length);
-  const prevImage = () => setCurrentIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+  const nextImage = () => setCurrentIndex((prev) => (allImages.length ? (prev + 1) % allImages.length : 0));
+  const prevImage = () =>
+    setCurrentIndex((prev) => (allImages.length ? (prev - 1 + allImages.length) % allImages.length : 0));
 
   const loadMore = () => {
-    setVisibleProjectCount((prev) => Math.min(prev + PROJECTS_PER_BATCH, blocks.length));
+    setVisibleProjectCount((prev) => Math.min(prev + PROJECTS_PER_BATCH, layoutBlocks.length));
   };
 
   return (
     <main className="min-h-screen bg-background">
       <GlobalNav />
-      <SEO title={"Gallery — Ocean City Luxury Home Portfolio"} description={"Curated renderings and photography of luxury custom homes by Ocean City Development Group."} path="/gallery" />
+      <SEO
+        title={"Gallery — Ocean City Luxury Home Portfolio"}
+        description={"Curated renderings and photography of luxury custom homes by Ocean City Development Group."}
+        path="/gallery"
+      />
 
-      {/* Hero */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <img
           src={subpageHero}
@@ -258,31 +227,39 @@ const GalleryPage = () => {
         <div className="relative z-10 text-center px-4 animate-fade-in-up">
           <p className="label-uppercase text-white/70 mb-4">Our Work</p>
           <h1 className="heading-display text-white">Gallery</h1>
-                  </div>
+        </div>
       </section>
 
-      {/* Gallery Collage */}
       <section className="section-padding">
         <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
-          {visibleBlocks.map((block) =>
-            block.kind === "render" ? (
-              <ProjectCollage
-                key={`render-${block.project.name}`}
-                project={block.project}
-                globalOffset={block.offset}
-                onImageClick={openLightbox}
-              />
-            ) : (
-              <PhotoGrid
-                key={`photo-${block.project.name}`}
-                project={block.project}
-                globalOffset={block.offset}
-                onImageClick={openLightbox}
-              />
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="w-8 h-8 border-2 border-charcoal/20 border-t-charcoal rounded-full animate-spin" />
+            </div>
+          ) : layoutBlocks.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-body text-lg">No gallery images yet.</p>
+            </div>
+          ) : (
+            visibleBlocks.map((lb) =>
+              lb.kind === "render" ? (
+                <ProjectCollage
+                  key={`render-${lb.block.slug}`}
+                  block={lb.block}
+                  globalOffset={lb.offset}
+                  onImageClick={openLightbox}
+                />
+              ) : (
+                <PhotoGrid
+                  key={`photo-${lb.block.slug}`}
+                  block={lb.block}
+                  globalOffset={lb.offset}
+                  onImageClick={openLightbox}
+                />
+              ),
             )
           )}
 
-          {/* Load More */}
           {hasMore && (
             <div className="text-center mt-4">
               <button onClick={loadMore} className="btn-outline text-xs inline-flex">
@@ -293,8 +270,7 @@ const GalleryPage = () => {
         </div>
       </section>
 
-      {/* Lightbox */}
-      {lightboxOpen && (
+      {lightboxOpen && allImages.length > 0 && (
         <div className="lightbox-overlay" onClick={closeLightbox}>
           <button aria-label="Close gallery" className="absolute top-6 right-6 text-white/80 hover:text-white transition-colors z-10" onClick={closeLightbox}>
             <X className="w-8 h-8" />
@@ -306,7 +282,6 @@ const GalleryPage = () => {
             <ChevronRight className="w-10 h-10" />
           </button>
           <img src={allImages[currentIndex].src} alt={allImages[currentIndex].alt} className="max-w-[90vw] max-h-[85vh] object-contain" decoding="async" loading="lazy" onClick={(e) => e.stopPropagation()} />
-          {/* Preload prev/next so lightbox feels instant */}
           <img src={allImages[(currentIndex + 1) % allImages.length].src} alt="" className="hidden" aria-hidden="true" loading="lazy" decoding="async" />
           <img src={allImages[(currentIndex - 1 + allImages.length) % allImages.length].src} alt="" className="hidden" aria-hidden="true" loading="lazy" decoding="async" />
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center">

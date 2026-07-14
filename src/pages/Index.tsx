@@ -7,7 +7,8 @@ import SEO from "@/components/SEO";
 import GlobalFooter from "@/components/GlobalFooter";
 import PropertyCarousel from "@/components/PropertyCarousel";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { currentProjects, getProjectLink, sortByListedDateDesc } from "@/lib/currentProjects";
+import { usePublicProperties } from "@/hooks/usePublicProperties";
+import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/admin/status";
 import extView2_28th from "@/assets/28th-ext-view2.jpg";
 import approachImage from "@/assets/28th-approach-v4.jpg";
 
@@ -220,6 +221,28 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Featured carousel = active + under_contract, active group first, newest-first within each.
+  const { data: featuredProps = [] } = usePublicProperties({ status: ["active", "under_contract"] });
+  const featuredItems = [...featuredProps]
+    .sort((a, b) => {
+      const order = (s: string) => (s === "active" ? 0 : s === "under_contract" ? 1 : 2);
+      const g = order(a.status) - order(b.status);
+      if (g !== 0) return g;
+      const ta = a.listed_date ? Date.parse(a.listed_date) : -Infinity;
+      const tb = b.listed_date ? Date.parse(b.listed_date) : -Infinity;
+      return tb - ta;
+    })
+    .map((p) => ({
+      title: p.title,
+      image: p.card_image_url ?? "",
+      link: `/developments/${p.slug}`,
+      location: p.location,
+      description: p.tagline ?? p.description ?? "",
+      price: p.price ?? undefined,
+      badgeLabel: STATUS_LABELS[p.status],
+      badgeColor: STATUS_BADGE_CLASSES[p.status],
+    }));
+
   return (
     <main className="min-h-screen bg-background">
       <GlobalNav />
@@ -272,32 +295,13 @@ const Index = () => {
 
           <RevealSection>
             <PropertyCarousel
-              items={[...currentProjects]
-                .sort((a, b) => {
-                  // Status group first (Active → Under Contract), then newest listedDate.
-                  const order = (s: string) => (s === "Active Listing" ? 0 : s === "Under Contract" ? 1 : 2);
-                  const g = order(a.status) - order(b.status);
-                  if (g !== 0) return g;
-                  const ta = a.listedDate ? Date.parse(a.listedDate) : -Infinity;
-                  const tb = b.listedDate ? Date.parse(b.listedDate) : -Infinity;
-                  return tb - ta;
-                })
-                .map((dev) => ({
-                title: dev.title,
-                image: dev.image,
-                link: getProjectLink(dev.slug),
-                location: dev.location,
-                description: dev.description,
-                price: dev.price,
-                badgeLabel: dev.status,
-                badgeColor: dev.statusColor,
-              }))}
+              items={featuredItems}
             />
           </RevealSection>
 
           <RevealSection>
             <div className="text-center mt-12">
-              <Link to="/developments/current-projects" className="btn-outline text-xs inline-flex">
+              <Link to="/developments/active-listings" className="btn-outline text-xs inline-flex">
                 View All Current Projects
               </Link>
             </div>

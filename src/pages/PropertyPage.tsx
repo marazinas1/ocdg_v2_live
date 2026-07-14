@@ -23,6 +23,7 @@ import { useAdminAuth } from "@/hooks/admin/useAdminAuth";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { getSpecIcon } from "@/lib/specIcons";
 import { STATUS_LABELS, isPropertyStatus } from "@/lib/admin/status";
+import { usePropertyNeighbors } from "@/hooks/usePublicProperties";
 
 type PropertyRow = {
   id: string;
@@ -893,8 +894,65 @@ const PropertyPage = () => {
         </div>
       </section>
 
+      <PropertyNeighborsNav slug={property.slug} status={property.status} />
+
       <GlobalFooter />
     </main>
+  );
+};
+
+// ── Prev / Back / Next nav ─────────────────────────────────────
+
+const PropertyNeighborsNav = ({ slug, status }: { slug: string; status: string | null }) => {
+  const validStatus = status && isPropertyStatus(status) ? status : undefined;
+  const { prev, next } = usePropertyNeighbors(slug, validStatus);
+
+  if (!prev && !next) {
+    return (
+      <nav className="border-t border-border py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl flex justify-center">
+          <Link
+            to="/developments"
+            className="text-xs tracking-[0.15em] uppercase text-muted-slate hover:text-charcoal transition-colors"
+          >
+            ← Back to Developments
+          </Link>
+        </div>
+      </nav>
+    );
+  }
+
+  return (
+    <nav className="border-t border-border py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl flex items-center justify-between gap-4">
+        {prev ? (
+          <Link
+            to={`/developments/${prev.slug}`}
+            className="text-xs tracking-[0.15em] uppercase text-muted-slate hover:text-charcoal transition-colors"
+          >
+            ← {prev.title}
+          </Link>
+        ) : (
+          <span />
+        )}
+        <Link
+          to="/developments"
+          className="text-xs tracking-[0.15em] uppercase text-muted-slate hover:text-charcoal transition-colors"
+        >
+          ← Back to Developments
+        </Link>
+        {next ? (
+          <Link
+            to={`/developments/${next.slug}`}
+            className="text-xs tracking-[0.15em] uppercase text-muted-slate hover:text-charcoal transition-colors"
+          >
+            {next.title} →
+          </Link>
+        ) : (
+          <span />
+        )}
+      </div>
+    </nav>
   );
 };
 
