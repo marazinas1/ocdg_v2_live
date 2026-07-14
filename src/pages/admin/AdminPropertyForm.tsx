@@ -645,10 +645,6 @@ function FormInner() {
         }
         pathsToDelete = candidates.filter((p) => !stillRef.has(p));
       }
-      if (pathsToDelete.length) {
-        await deleteStorageObjects(pathsToDelete);
-      }
-
       // 2. Upsert property row
       const payload = {
         title: title.trim(),
@@ -701,13 +697,19 @@ function FormInner() {
       }
       if (!propertyId) throw new Error("No property id after save");
 
-      // 3. Delete DB rows for the storage objects we just removed.
+      // 3. Delete DB rows FIRST, then storage objects. If DB delete fails we
+      //    abort with no storage changes; if storage delete fails after DB
+      //    delete succeeded, the objects become orphans that the sweep step
+      //    cleans up — never leaves a row pointing at a missing object.
       if (deletedDbIds.length) {
         const { error } = await supabase
           .from("property_images")
           .delete()
           .in("id", deletedDbIds);
         if (error) throw error;
+      }
+      if (pathsToDelete.length) {
+        await deleteStorageObjects(pathsToDelete);
       }
 
       // 4. Upload pending files, then insert rows. Update existing rows for alt/sort/floor_plan changes.
