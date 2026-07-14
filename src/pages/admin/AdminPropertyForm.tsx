@@ -395,8 +395,38 @@ function FormInner() {
     for (const k of Object.keys(grouped)) {
       grouped[k].sort((a, b) => a.sort_order - b.sort_order);
     }
+    // Single-image invariant: hero/card/vision must have at most one row per
+    // property. If duplicates exist (from a previously partial save), keep
+    // the one with the highest sort_order (the freshest replacement) and
+    // mark the rest for deletion. deleteStorageObjects is idempotent, so
+    // stale rows pointing at already-missing objects are cleaned safely.
+    const staleDbIds: string[] = [];
+    const stalePaths: string[] = [];
+    for (const single of ["hero", "card", "vision"] as const) {
+      const arr = grouped[single] ?? [];
+      if (arr.length > 1) {
+        const keep = arr[arr.length - 1];
+        for (const s of arr) {
+          if (s === keep) continue;
+          if (s.kind === "existing") {
+            staleDbIds.push(s.dbId);
+            stalePaths.push(s.storage_path);
+          }
+        }
+        grouped[single] = [keep];
+      }
+    }
     setSlotsByCategory(grouped);
-    setDirty(false);
+    if (staleDbIds.length) {
+      setDeletedDbIds((p) => [...p, ...staleDbIds]);
+      setDeletedStoragePaths((p) => [...p, ...stalePaths]);
+      setDirty(true);
+      toast.info(
+        `Detected ${staleDbIds.length} duplicate image row(s) in single-image slot(s). They will be cleaned up on save.`,
+      );
+    } else {
+      setDirty(false);
+    }
   }, [existing]);
 
   // Auto-slug from title while user hasn't touched slug.
