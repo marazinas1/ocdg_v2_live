@@ -395,8 +395,38 @@ function FormInner() {
     for (const k of Object.keys(grouped)) {
       grouped[k].sort((a, b) => a.sort_order - b.sort_order);
     }
+    // Single-image invariant: hero/card/vision must have at most one row per
+    // property. If duplicates exist (from a previously partial save), keep
+    // the one with the highest sort_order (the freshest replacement) and
+    // mark the rest for deletion. deleteStorageObjects is idempotent, so
+    // stale rows pointing at already-missing objects are cleaned safely.
+    const staleDbIds: string[] = [];
+    const stalePaths: string[] = [];
+    for (const single of ["hero", "card", "vision"] as const) {
+      const arr = grouped[single] ?? [];
+      if (arr.length > 1) {
+        const keep = arr[arr.length - 1];
+        for (const s of arr) {
+          if (s === keep) continue;
+          if (s.kind === "existing") {
+            staleDbIds.push(s.dbId);
+            stalePaths.push(s.storage_path);
+          }
+        }
+        grouped[single] = [keep];
+      }
+    }
     setSlotsByCategory(grouped);
-    setDirty(false);
+    if (staleDbIds.length) {
+      setDeletedDbIds((p) => [...p, ...staleDbIds]);
+      setDeletedStoragePaths((p) => [...p, ...stalePaths]);
+      setDirty(true);
+      toast.info(
+        `Detected ${staleDbIds.length} duplicate image row(s) in single-image slot(s). They will be cleaned up on save.`,
+      );
+    } else {
+      setDirty(false);
+    }
   }, [existing]);
 
   // Auto-slug from title while user hasn't touched slug.
@@ -615,10 +645,6 @@ function FormInner() {
         }
         pathsToDelete = candidates.filter((p) => !stillRef.has(p));
       }
-      if (pathsToDelete.length) {
-        await deleteStorageObjects(pathsToDelete);
-      }
-
       // 2. Upsert property row
       const payload = {
         title: title.trim(),
@@ -671,13 +697,19 @@ function FormInner() {
       }
       if (!propertyId) throw new Error("No property id after save");
 
-      // 3. Delete DB rows for the storage objects we just removed.
+      // 3. Delete DB rows FIRST, then storage objects. If DB delete fails we
+      //    abort with no storage changes; if storage delete fails after DB
+      //    delete succeeded, the objects become orphans that the sweep step
+      //    cleans up — never leaves a row pointing at a missing object.
       if (deletedDbIds.length) {
         const { error } = await supabase
           .from("property_images")
           .delete()
           .in("id", deletedDbIds);
         if (error) throw error;
+      }
+      if (pathsToDelete.length) {
+        await deleteStorageObjects(pathsToDelete);
       }
 
       // 4. Upload pending files, then insert rows. Update existing rows for alt/sort/floor_plan changes.

@@ -89,9 +89,39 @@ export async function deleteStorageObjects(paths: string[]): Promise<void> {
     const removed = new Set((data ?? []).map((o: any) => o.name));
     const missing = chunk.filter((p) => !removed.has(p));
     if (missing.length) {
-      throw new Error(
-        `Storage delete failed for ${missing.length} object(s): ${missing.join(", ")}`,
-      );
+      // Idempotent-delete guard: `remove()` returns the same empty array when
+      // the object never existed OR when the delete failed. Verify with the
+      // admin-gated listing RPC — anything not in the bucket listing is
+      // already gone (treat as success); anything still present is a real
+      // failure and must abort the save.
+      const bySlug = new Map<string, string[]>();
+      for (const p of missing) {
+        const slug = p.split("/")[0];
+        if (!slug) continue;
+        const arr = bySlug.get(slug) ?? [];
+        arr.push(p);
+        bySlug.set(slug, arr);
+      }
+      const stillPresent: string[] = [];
+      for (const [slug, slugPaths] of bySlug) {
+        const { data: listData, error: listErr } = await supabase.rpc(
+          "list_property_bucket_paths",
+          { _slug: slug },
+        );
+        if (listErr) {
+          // Can't verify — surface as failure so we don't silently proceed.
+          throw new Error(
+            `Storage delete verify failed for slug "${slug}": ${listErr.message}`,
+          );
+        }
+        const present = new Set((listData as { name: string }[] | null ?? []).map((r) => r.name));
+        for (const p of slugPaths) if (present.has(p)) stillPresent.push(p);
+      }
+      if (stillPresent.length) {
+        throw new Error(
+          `Storage delete failed for ${stillPresent.length} object(s): ${stillPresent.join(", ")}`,
+        );
+      }
     }
   }
 }
