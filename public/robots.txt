@@ -1,16 +1,10 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+# TODO: DEMO WINDOW — BLOCK ALL CRAWLERS
+# This file is intentionally restrictive for the non-technical owner demo on
+# *.lovable.app preview domains. Before the public go-live on
+# oceancitydevelopment.com, replace this entire contents with the normal
+# robots.txt that allows all major crawlers and includes the
+# "Sitemap: https://www.oceancitydevelopment.com/sitemap.xml" directive.
+# See the previous commit of public/robots.txt for the go-live version.
 
 User-agent: *
-Allow: /
-
-Sitemap: https://www.oceancitydevelopment.com/sitemap.xml
+Disallow: /
