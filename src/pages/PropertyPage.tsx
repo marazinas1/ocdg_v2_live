@@ -235,6 +235,11 @@ const PropertyPage = () => {
   if (!property) {
     return <Navigate to="/404" replace />;
   }
+  // Record-only entries (imported MLS past developments) have no full page.
+  // Bounce to 404 so they never render as an orphan property page.
+  if (!property.has_page) {
+    return <Navigate to="/404" replace />;
+  }
   if (!property.published && !isAdmin && adminAuth.status !== "loading") {
     return <Navigate to="/404" replace />;
   }
