@@ -981,6 +981,17 @@ function FormInner() {
               </span>
             </div>
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>MLS URL</Label>
+            <Input
+              value={mlsUrl}
+              placeholder="https://sjsr.paragonrels.com/…"
+              onChange={(e) => { setMlsUrl(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Optional. When set, renders an "Official Property Record: South Jersey MLS" link under the specs section.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
