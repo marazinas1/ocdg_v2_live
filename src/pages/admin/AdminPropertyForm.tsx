@@ -257,6 +257,7 @@ function FormInner() {
   const [listedDate, setListedDate] = useState("");
   const [published, setPublished] = useState(false);
   const [hasPage, setHasPage] = useState(true);
+  const [mlsUrl, setMlsUrl] = useState("");
 
   const [headline, setHeadline] = useState("");
   const [tagline, setTagline] = useState("");
@@ -325,6 +326,7 @@ function FormInner() {
     setListedDate(p.listed_date ?? "");
     setPublished(!!p.published);
     setHasPage(p.has_page ?? true);
+    setMlsUrl((p as any).mls_url ?? "");
     setHeadline(p.headline ?? "");
     setTagline(p.tagline ?? "");
     setDescription(p.description ?? "");
@@ -657,6 +659,7 @@ function FormInner() {
         listed_date: listedDate || null,
         published,
         has_page: hasPage,
+        mls_url: mlsUrl.trim() || null,
         headline: headline || null,
         tagline: tagline || null,
         description: description || null,
@@ -977,6 +980,17 @@ function FormInner() {
                   : "Record only — appears as a non-clickable card in Past Developments. Hidden from the sitemap and prev/next loop."}
               </span>
             </div>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>MLS URL</Label>
+            <Input
+              value={mlsUrl}
+              placeholder="https://sjsr.paragonrels.com/…"
+              onChange={(e) => { setMlsUrl(e.target.value); markDirty(); }}
+            />
+            <p className="text-xs text-slate-500">
+              Optional. When set, renders an "Official Property Record: South Jersey MLS" link under the specs section.
+            </p>
           </div>
         </CardContent>
       </Card>

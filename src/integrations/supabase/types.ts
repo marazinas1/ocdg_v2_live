@@ -158,6 +158,7 @@ export type Database = {
           location_state: string | null
           luxury_features: Json
           map_embed_query: string | null
+          mls_url: string | null
           price: string | null
           published: boolean
           slug: string
@@ -195,6 +196,7 @@ export type Database = {
           location_state?: string | null
           luxury_features?: Json
           map_embed_query?: string | null
+          mls_url?: string | null
           price?: string | null
           published?: boolean
           slug: string
@@ -232,6 +234,7 @@ export type Database = {
           location_state?: string | null
           luxury_features?: Json
           map_embed_query?: string | null
+          mls_url?: string | null
           price?: string | null
           published?: boolean
           slug?: string
