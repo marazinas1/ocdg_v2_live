@@ -256,6 +256,7 @@ function FormInner() {
   const [price, setPrice] = useState("");
   const [listedDate, setListedDate] = useState("");
   const [published, setPublished] = useState(false);
+  const [hasPage, setHasPage] = useState(true);
 
   const [headline, setHeadline] = useState("");
   const [tagline, setTagline] = useState("");
@@ -323,6 +324,7 @@ function FormInner() {
     setPrice(p.price ?? "");
     setListedDate(p.listed_date ?? "");
     setPublished(!!p.published);
+    setHasPage(p.has_page ?? true);
     setHeadline(p.headline ?? "");
     setTagline(p.tagline ?? "");
     setDescription(p.description ?? "");
@@ -654,6 +656,7 @@ function FormInner() {
         price: price || null,
         listed_date: listedDate || null,
         published,
+        has_page: hasPage,
         headline: headline || null,
         tagline: tagline || null,
         description: description || null,
