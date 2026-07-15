@@ -257,6 +257,7 @@ function FormInner() {
   const [listedDate, setListedDate] = useState("");
   const [published, setPublished] = useState(false);
   const [hasPage, setHasPage] = useState(true);
+  const [mlsUrl, setMlsUrl] = useState("");
 
   const [headline, setHeadline] = useState("");
   const [tagline, setTagline] = useState("");
@@ -325,6 +326,7 @@ function FormInner() {
     setListedDate(p.listed_date ?? "");
     setPublished(!!p.published);
     setHasPage(p.has_page ?? true);
+    setMlsUrl((p as any).mls_url ?? "");
     setHeadline(p.headline ?? "");
     setTagline(p.tagline ?? "");
     setDescription(p.description ?? "");
