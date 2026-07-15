@@ -961,6 +961,23 @@ function FormInner() {
               </span>
             </div>
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Full listing page</Label>
+            <div className="flex items-center h-10">
+              <Switch
+                checked={hasPage}
+                onCheckedChange={(v) => {
+                  setHasPage(v);
+                  markDirty();
+                }}
+              />
+              <span className="ml-3 text-sm text-slate-600">
+                {hasPage
+                  ? "Renders a full clickable property page."
+                  : "Record only — appears as a non-clickable card in Past Developments. Hidden from the sitemap and prev/next loop."}
+              </span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
