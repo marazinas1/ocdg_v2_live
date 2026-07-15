@@ -14,6 +14,7 @@ export type PublicPropertyCard = {
   listed_date: string | null;
   created_at: string;
   card_image_url: string | null;
+  has_page: boolean;
 };
 
 const publicUrl = (path: string) =>
@@ -35,13 +36,26 @@ const formatLocation = (row: {
  * resolved from property_images: prefer category='card', fall back to first 'hero'.
  * Sorted newest-first by listed_date (nulls last), then created_at desc.
  */
-export function usePublicProperties(opts?: { status?: PropertyStatus | PropertyStatus[] }) {
+/**
+ * Fetches published properties (optionally filtered by status). Excludes
+ * record-only entries (has_page=false) by default — those are surfaced via
+ * `usePastDevelopments`. Pass `includeRecordOnly` to opt in.
+ */
+export function usePublicProperties(opts?: {
+  status?: PropertyStatus | PropertyStatus[];
+  includeRecordOnly?: boolean;
+}) {
   const statusFilter = opts?.status
     ? Array.isArray(opts.status)
       ? opts.status
       : [opts.status]
     : null;
-  const key = ["public-properties", statusFilter ? statusFilter.join(",") : "all"];
+  const includeRecordOnly = opts?.includeRecordOnly ?? false;
+  const key = [
+    "public-properties",
+    statusFilter ? statusFilter.join(",") : "all",
+    includeRecordOnly ? "with-record-only" : "no-record-only",
+  ];
 
   return useQuery({
     queryKey: key,
@@ -49,10 +63,11 @@ export function usePublicProperties(opts?: { status?: PropertyStatus | PropertyS
       let q = supabase
         .from("properties")
         .select(
-          "id, slug, title, price, status, tagline, description, location_neighborhood, location_city, location_state, listed_date, created_at, published",
+          "id, slug, title, price, status, tagline, description, location_neighborhood, location_city, location_state, listed_date, created_at, published, has_page",
         )
         .eq("published", true);
       if (statusFilter) q = q.in("status", statusFilter);
+      if (!includeRecordOnly) q = q.eq("has_page", true);
       const { data: rows, error } = await q;
       if (error) throw error;
 
@@ -69,6 +84,7 @@ export function usePublicProperties(opts?: { status?: PropertyStatus | PropertyS
         location_state: string | null;
         listed_date: string | null;
         created_at: string;
+        has_page: boolean;
       }>;
 
       // Fetch card + hero images for these properties in one round-trip.
@@ -104,6 +120,7 @@ export function usePublicProperties(opts?: { status?: PropertyStatus | PropertyS
           listed_date: p.listed_date,
           created_at: p.created_at,
           card_image_url: path ? publicUrl(path) : null,
+          has_page: p.has_page,
         };
       });
 
@@ -114,6 +131,68 @@ export function usePublicProperties(opts?: { status?: PropertyStatus | PropertyS
         return Date.parse(b.created_at) - Date.parse(a.created_at);
       });
 
+      return cards;
+    },
+  });
+}
+
+/**
+ * Record-only past developments (has_page=false). Rendered as non-clickable
+ * social-proof cards on the Sold page. Sorted newest-first by listed_date.
+ */
+export function usePastDevelopments() {
+  return useQuery({
+    queryKey: ["past-developments"],
+    queryFn: async (): Promise<PublicPropertyCard[]> => {
+      const { data: rows, error } = await supabase
+        .from("properties")
+        .select(
+          "id, slug, title, price, status, tagline, description, location_neighborhood, location_city, location_state, listed_date, created_at, published, has_page",
+        )
+        .eq("published", true)
+        .eq("has_page", false)
+        .eq("status", "sold");
+      if (error) throw error;
+      const props = (rows ?? []) as any[];
+      const ids = props.map((p) => p.id);
+      const imagesByProperty: Record<string, string> = {};
+      if (ids.length) {
+        const { data: imgs } = await supabase
+          .from("property_images")
+          .select("property_id, storage_path, sort_order")
+          .eq("category", "card")
+          .in("property_id", ids)
+          .order("sort_order", { ascending: true });
+        for (const img of imgs ?? []) {
+          if (!imagesByProperty[img.property_id])
+            imagesByProperty[img.property_id] = img.storage_path;
+        }
+      }
+      const cards: PublicPropertyCard[] = props.map((p) => {
+        const path = imagesByProperty[p.id] ?? null;
+        return {
+          id: p.id,
+          slug: p.slug,
+          title: p.title,
+          price: p.price,
+          status: p.status as PropertyStatus,
+          tagline: p.tagline,
+          description: p.description,
+          location: formatLocation(p),
+          listed_date: p.listed_date,
+          created_at: p.created_at,
+          card_image_url: path ? publicUrl(path) : null,
+          has_page: p.has_page,
+        };
+      });
+      const parsePrice = (v: string | null) =>
+        v ? Number(v.replace(/[^0-9.]/g, "")) || 0 : 0;
+      cards.sort((a, b) => {
+        const ya = a.listed_date ? new Date(a.listed_date).getFullYear() : 0;
+        const yb = b.listed_date ? new Date(b.listed_date).getFullYear() : 0;
+        if (ya !== yb) return yb - ya;
+        return parsePrice(b.price) - parsePrice(a.price);
+      });
       return cards;
     },
   });
