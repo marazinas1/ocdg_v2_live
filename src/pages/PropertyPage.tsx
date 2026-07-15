@@ -64,6 +64,7 @@ type PropertyRow = {
   location_features: string[] | null;
   published: boolean;
   has_page: boolean;
+  mls_url: string | null;
 };
 
 type ImageRow = {
