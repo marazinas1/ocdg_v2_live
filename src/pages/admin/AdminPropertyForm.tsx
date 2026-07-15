@@ -659,6 +659,7 @@ function FormInner() {
         listed_date: listedDate || null,
         published,
         has_page: hasPage,
+        mls_url: mlsUrl.trim() || null,
         headline: headline || null,
         tagline: tagline || null,
         description: description || null,
