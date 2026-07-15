@@ -41,7 +41,10 @@ async function fetchProperties(): Promise<
   Array<{ slug: string; status: string | null; updated_at: string | null }>
 > {
   if (!SUPABASE_ANON_KEY) return [];
-  const url = `${SUPABASE_URL}/rest/v1/properties?select=slug,status,updated_at&published=eq.true`;
+  // Only include properties with a full page. Record-only past developments
+  // (has_page=false) are shown as photo cards on the Sold page but must not
+  // appear as crawlable URLs.
+  const url = `${SUPABASE_URL}/rest/v1/properties?select=slug,status,updated_at&published=eq.true&has_page=eq.true`;
   const res = await fetch(url, {
     headers: {
       apikey: SUPABASE_ANON_KEY,

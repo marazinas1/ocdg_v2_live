@@ -37,7 +37,8 @@ Deno.serve(async (req) => {
   const { data, error } = await supabase
     .from("properties")
     .select("slug, updated_at, status")
-    .eq("published", true);
+    .eq("published", true)
+    .eq("has_page", true);
 
   if (error) {
     return new Response(`sitemap error: ${error.message}`, { status: 500 });
