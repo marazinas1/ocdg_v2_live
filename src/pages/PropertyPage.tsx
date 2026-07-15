@@ -63,6 +63,7 @@ type PropertyRow = {
   luxury_features: string[] | null;
   location_features: string[] | null;
   published: boolean;
+  has_page: boolean;
 };
 
 type ImageRow = {
