@@ -145,6 +145,7 @@ export type Database = {
           floor_plans: Json
           full_baths: number | null
           half_baths: number | null
+          has_page: boolean
           headline: string | null
           highlights: Json
           id: string
@@ -181,6 +182,7 @@ export type Database = {
           floor_plans?: Json
           full_baths?: number | null
           half_baths?: number | null
+          has_page?: boolean
           headline?: string | null
           highlights?: Json
           id?: string
@@ -217,6 +219,7 @@ export type Database = {
           floor_plans?: Json
           full_baths?: number | null
           half_baths?: number | null
+          has_page?: boolean
           headline?: string | null
           highlights?: Json
           id?: string

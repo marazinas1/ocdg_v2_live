@@ -26,22 +26,26 @@ import {
 } from "@/components/ui/select";
 
 type Filter = "all" | PropertyStatus;
+type PageFilter = "all" | "full" | "record_only";
 
 function AdminPropertiesInner() {
   const { data, isLoading } = useProperties();
   const updateStatus = useUpdatePropertyStatus();
   const updatePublished = useUpdatePropertyPublished();
   const [filter, setFilter] = useState<Filter>("all");
+  const [pageFilter, setPageFilter] = useState<PageFilter>("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     const rows = data ?? [];
     return rows.filter((r) => {
       if (filter !== "all" && r.status !== filter) return false;
+      if (pageFilter === "full" && !r.has_page) return false;
+      if (pageFilter === "record_only" && r.has_page) return false;
       if (search && !r.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [data, filter, search]);
+  }, [data, filter, pageFilter, search]);
 
   return (
     <div className="space-y-6">
@@ -75,6 +79,28 @@ function AdminPropertiesInner() {
               }
             >
               {f === "all" ? "All" : STATUS_LABELS[f]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 rounded-md bg-slate-100 p-1">
+          {(
+            [
+              ["all", "All pages"],
+              ["full", "Full page"],
+              ["record_only", "Record only"],
+            ] as [PageFilter, string][]
+          ).map(([f, label]) => (
+            <button
+              key={f}
+              onClick={() => setPageFilter(f)}
+              className={
+                "px-3 py-1.5 text-sm rounded transition " +
+                (pageFilter === f
+                  ? "bg-white shadow-sm text-slate-900"
+                  : "text-slate-600 hover:text-slate-900")
+              }
+            >
+              {label}
             </button>
           ))}
         </div>
@@ -131,7 +157,14 @@ function AdminPropertiesInner() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-900">{row.title}</div>
-                    <div className="text-xs text-slate-500">/{row.slug}</div>
+                    <div className="text-xs text-slate-500 flex items-center gap-2">
+                      <span>/{row.slug}</span>
+                      {!row.has_page && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] uppercase tracking-wider">
+                          Record only
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">{row.price ?? "—"}</td>
                   <td className="px-4 py-3">

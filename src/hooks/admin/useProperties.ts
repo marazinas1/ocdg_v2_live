@@ -9,6 +9,7 @@ export type PropertyListItem = {
   price: string | null;
   status: string;
   published: boolean;
+  has_page: boolean;
   listed_date: string | null;
   card_image_url: string | null;
   updated_at: string;
@@ -20,7 +21,7 @@ export function useProperties() {
     queryFn: async (): Promise<PropertyListItem[]> => {
       const { data: props, error } = await supabase
         .from("properties")
-        .select("id, slug, title, price, status, published, listed_date, updated_at")
+        .select("id, slug, title, price, status, published, has_page, listed_date, updated_at")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       const ids = (props ?? []).map((p) => p.id);

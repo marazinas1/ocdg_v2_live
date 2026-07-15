@@ -1,18 +1,16 @@
-import { useState, useMemo } from "react";
-import { pastDevelopments } from "@/lib/pastDevelopments";
+import { useState } from "react";
+import { usePastDevelopments } from "@/hooks/usePublicProperties";
 
 const PAGE_SIZE = 8;
 
 const PastDevelopmentsSection = () => {
+  const { data, isLoading } = usePastDevelopments();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const sorted = useMemo(() => {
-    const parsePrice = (p: string) => Number(p.replace(/[^0-9.]/g, "")) || 0;
-    return [...pastDevelopments].sort(
-      (a, b) => b.year - a.year || parsePrice(b.soldPrice) - parsePrice(a.soldPrice),
-    );
-  }, []);
-  const visible = sorted.slice(0, visibleCount);
-  const hasMore = visibleCount < sorted.length;
+  const list = data ?? [];
+  const visible = list.slice(0, visibleCount);
+  const hasMore = visibleCount < list.length;
+
+  if (!isLoading && list.length === 0) return null;
 
   return (
     <section className="section-padding border-t border-border/40">
@@ -28,35 +26,43 @@ const PastDevelopmentsSection = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {visible.map((p) => (
             <div
-              key={p.mls}
+              key={p.id}
               className="overflow-hidden border border-border/50 bg-card flex flex-col"
               style={{ borderRadius: "4px" }}
             >
               <div className="relative aspect-[4/3] overflow-hidden bg-accent">
-                <img
-                  src={p.image}
-                  alt={p.address}
-                  loading="lazy"
-                  className="w-full h-full object-cover"
-                />
+                {p.card_image_url ? (
+                  <img
+                    src={p.card_image_url}
+                    alt={p.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-accent">
+                    <p className="text-xs text-muted-slate">Photo Coming Soon</p>
+                  </div>
+                )}
                 <div className="absolute top-3 left-3">
                   <span
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-white bg-charcoal/85 backdrop-blur-sm"
                     style={{ borderRadius: "3px" }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
-                    Sold {p.year}
+                    Sold {p.listed_date ? new Date(p.listed_date).getFullYear() : ""}
                   </span>
                 </div>
               </div>
               <div className="p-5 flex flex-col flex-grow">
                 <h3 className="font-display text-lg text-charcoal leading-snug mb-1">
-                  {p.address}
+                  {p.title}
                 </h3>
-                <p className="text-xs text-muted-slate">{p.description}</p>
-                {p.soldPrice && (
+                {p.description && (
+                  <p className="text-xs text-muted-slate">{p.description}</p>
+                )}
+                {p.price && (
                   <p className="text-xs uppercase tracking-[0.15em] text-muted-slate mt-3">
-                    Sold {p.soldPrice}
+                    Sold {p.price}
                   </p>
                 )}
               </div>

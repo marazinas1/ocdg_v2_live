@@ -256,6 +256,7 @@ function FormInner() {
   const [price, setPrice] = useState("");
   const [listedDate, setListedDate] = useState("");
   const [published, setPublished] = useState(false);
+  const [hasPage, setHasPage] = useState(true);
 
   const [headline, setHeadline] = useState("");
   const [tagline, setTagline] = useState("");
@@ -323,6 +324,7 @@ function FormInner() {
     setPrice(p.price ?? "");
     setListedDate(p.listed_date ?? "");
     setPublished(!!p.published);
+    setHasPage(p.has_page ?? true);
     setHeadline(p.headline ?? "");
     setTagline(p.tagline ?? "");
     setDescription(p.description ?? "");
@@ -654,6 +656,7 @@ function FormInner() {
         price: price || null,
         listed_date: listedDate || null,
         published,
+        has_page: hasPage,
         headline: headline || null,
         tagline: tagline || null,
         description: description || null,
@@ -955,6 +958,23 @@ function FormInner() {
               <Switch checked={published} onCheckedChange={(v) => { setPublished(v); markDirty(); }} />
               <span className="ml-3 text-sm text-slate-600">
                 {published ? "Visible on the public site" : "Draft"}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Full listing page</Label>
+            <div className="flex items-center h-10">
+              <Switch
+                checked={hasPage}
+                onCheckedChange={(v) => {
+                  setHasPage(v);
+                  markDirty();
+                }}
+              />
+              <span className="ml-3 text-sm text-slate-600">
+                {hasPage
+                  ? "Renders a full clickable property page."
+                  : "Record only — appears as a non-clickable card in Past Developments. Hidden from the sitemap and prev/next loop."}
               </span>
             </div>
           </div>
