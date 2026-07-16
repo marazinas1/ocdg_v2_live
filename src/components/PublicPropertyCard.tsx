@@ -10,9 +10,11 @@ import type { PublicPropertyCard as PublicPropertyCardData } from "@/hooks/usePu
 const PublicPropertyCard = ({
   card,
   showCTA = true,
+  eager = false,
 }: {
   card: PublicPropertyCardData;
   showCTA?: boolean;
+  eager?: boolean;
 }) => {
   const href = `/developments/${card.slug}`;
   const badgeClass = STATUS_BADGE_CLASSES[card.status];
@@ -26,7 +28,8 @@ const PublicPropertyCard = ({
             src={card.card_image_url}
             alt={card.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
+            loading={eager ? "eager" : "lazy"}
+            fetchPriority={eager ? "high" : "auto"}
             decoding="async"
           />
         ) : (

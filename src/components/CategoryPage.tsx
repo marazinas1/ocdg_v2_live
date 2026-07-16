@@ -9,6 +9,18 @@ import type { PropertyStatus } from "@/lib/admin/status";
 
 const PAGE_SIZE = 9;
 
+const CardSkeleton = () => (
+  <div className="card-elegant overflow-hidden h-full flex flex-col">
+    <div className="relative aspect-[4/3] bg-muted animate-pulse" />
+    <div className="p-6 flex flex-col gap-3">
+      <div className="h-3 w-1/3 bg-muted animate-pulse rounded" />
+      <div className="h-5 w-2/3 bg-muted animate-pulse rounded" />
+      <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
+      <div className="h-16 w-full bg-muted animate-pulse rounded" />
+    </div>
+  </div>
+);
+
 /**
  * Shared layout for /developments category pages. Consumes DB-backed properties
  * filtered by a single status. Paginator + parallax hero are identical to the
@@ -71,8 +83,10 @@ const CategoryPage = ({
       <section className="section-padding">
         <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-8 h-8 border-2 border-charcoal/20 border-t-charcoal rounded-full animate-spin" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
             </div>
           ) : list.length === 0 ? (
             <div className="text-center py-20">
@@ -82,8 +96,8 @@ const CategoryPage = ({
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {visible.map((card) => (
-                  <PublicPropertyCard key={card.id} card={card} />
+                {visible.map((card, i) => (
+                  <PublicPropertyCard key={card.id} card={card} eager={i < 3} />
                 ))}
               </div>
               {hasMore && (

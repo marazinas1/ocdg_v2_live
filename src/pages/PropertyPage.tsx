@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -121,31 +120,20 @@ const PropertyPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*")
+        .select("*, property_images(*)")
         .eq("slug", slug!)
         .maybeSingle();
       if (error) throw error;
-      return data as unknown as PropertyRow | null;
+      return data as unknown as (PropertyRow & { property_images: ImageRow[] }) | null;
     },
   });
 
   const property = propertyQuery.data ?? null;
 
-  const imagesQuery = useQuery({
-    queryKey: ["public-property-images", property?.id],
-    enabled: !!property?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("property_images")
-        .select("*")
-        .eq("property_id", property!.id)
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as ImageRow[];
-    },
-  });
-
-  const images = imagesQuery.data ?? [];
+  const images = useMemo(() => {
+    const rows = (property?.property_images ?? []) as ImageRow[];
+    return [...rows].sort((a, b) => a.sort_order - b.sort_order);
+  }, [property]);
 
   const grouped = useMemo(() => {
     const g: Record<string, ImageRow[]> = {};
@@ -231,7 +219,7 @@ const PropertyPage = () => {
   const { ref: registerRef, isVisible: registerVisible } = useScrollReveal();
 
   // Loading / not-found gates
-  if (propertyQuery.isLoading || (property && imagesQuery.isLoading)) {
+  if (propertyQuery.isLoading) {
     return <PageSkeleton />;
   }
   if (!property) {
@@ -322,7 +310,7 @@ const PropertyPage = () => {
         <div className="absolute inset-0 z-0">
           {heroUrl && (
             <>
-              <link rel="preload" as="image" href={heroUrl} />
+              <link rel="preload" as="image" href={heroUrl} fetchPriority="high" />
               <div
                 className="absolute inset-0 will-change-transform"
                 style={{ transform: `translateY(${scrollY * 0.15}px)` }}
@@ -531,7 +519,7 @@ const PropertyPage = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {property.specs.map((spec, index) => {
-                const Icon = getSpecIcon(spec.icon) ?? Sparkles;
+                const Icon = getSpecIcon(spec.icon);
                 return (
                   <div
                     key={index}
@@ -1029,9 +1017,17 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
         source,
         user_agent: navigator.userAgent,
       });
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Lead insert failed:", insertError);
+        toast.error(
+          "Something went wrong. Please call (609) 602-3917 or email PatrickAHalliday@gmail.com."
+        );
+        return;
+      }
 
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
+      // Lead is saved. Email notification is best-effort — don't fail the UX
+      // if the invoke errors; the inquiry is already captured in the DB.
+      const { error: emailError } = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "inquiry-notification",
           idempotencyKey: `property-${property.slug}-${id}`,
@@ -1045,7 +1041,9 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
           },
         },
       });
-      if (error) throw error;
+      if (emailError) {
+        console.error("Inquiry email notification failed (lead was saved):", emailError);
+      }
 
       toast.success(`Thank you. Patrick will be in touch regarding ${property.title} shortly.`);
       setForm({ name: "", email: "", phone: "", interest: "" });

@@ -59,9 +59,14 @@ const Contact = () => {
         source: "Contact page",
         user_agent: navigator.userAgent,
       });
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Lead insert failed:", insertError);
+        toast.error("Something went wrong. Please call (609) 602-3917 or email PatrickAHalliday@gmail.com.");
+        return;
+      }
 
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
+      // Lead is saved. Email notification is best-effort.
+      const { error: emailError } = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "inquiry-notification",
           idempotencyKey: `contact-${id}`,
@@ -75,7 +80,9 @@ const Contact = () => {
           },
         },
       });
-      if (error) throw error;
+      if (emailError) {
+        console.error("Inquiry email notification failed (lead was saved):", emailError);
+      }
 
       toast.success("Thank you — Patrick will be in touch shortly.");
       setForm({ name: "", email: "", phone: "", interest: "", message: "" });
