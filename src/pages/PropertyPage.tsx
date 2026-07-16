@@ -1017,9 +1017,17 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
         source,
         user_agent: navigator.userAgent,
       });
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Lead insert failed:", insertError);
+        toast.error(
+          "Something went wrong. Please call (609) 602-3917 or email PatrickAHalliday@gmail.com."
+        );
+        return;
+      }
 
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
+      // Lead is saved. Email notification is best-effort — don't fail the UX
+      // if the invoke errors; the inquiry is already captured in the DB.
+      const { error: emailError } = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "inquiry-notification",
           idempotencyKey: `property-${property.slug}-${id}`,
@@ -1033,7 +1041,9 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
           },
         },
       });
-      if (error) throw error;
+      if (emailError) {
+        console.error("Inquiry email notification failed (lead was saved):", emailError);
+      }
 
       toast.success(`Thank you. Patrick will be in touch regarding ${property.title} shortly.`);
       setForm({ name: "", email: "", phone: "", interest: "" });
