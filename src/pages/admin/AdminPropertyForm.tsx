@@ -120,6 +120,15 @@ function newLocalId() {
   return crypto.randomUUID();
 }
 
+function formatToday() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+
 function ImageSlotBox({
   slot,
   onFile,
@@ -254,7 +263,7 @@ function FormInner() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [status, setStatus] = useState<PropertyStatus>("coming_soon");
   const [price, setPrice] = useState("");
-  const [listedDate, setListedDate] = useState("");
+  const [listedDate, setListedDate] = useState(() => (isEdit ? "" : formatToday()));
   const [published, setPublished] = useState(false);
   const [hasPage, setHasPage] = useState(true);
   const [mlsUrl, setMlsUrl] = useState("");
@@ -954,7 +963,11 @@ function FormInner() {
               value={listedDate}
               onChange={(e) => { setListedDate(e.target.value); markDirty(); }}
             />
+            <p className="text-xs text-slate-500">
+              Determines ordering — newest first on the public site.
+            </p>
           </div>
+
           <div className="space-y-2">
             <Label>Published</Label>
             <div className="flex items-center h-10">
