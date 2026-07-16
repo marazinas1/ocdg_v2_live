@@ -1,13 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const rawNext = params.get("next");
-  // Only allow same-origin relative paths as post-login redirect targets.
-  const next = rawNext && rawNext.startsWith("/") ? rawNext : "/admin";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,13 +21,7 @@ const AdminLogin = () => {
         .eq("user_id", session.user.id)
         .eq("role", "admin")
         .maybeSingle();
-      if (active && roles) {
-        if (next.startsWith("/admin") || next === "/") {
-          navigate(next, { replace: true });
-        } else {
-          window.location.replace(next);
-        }
-      }
+      if (active && roles) navigate("/admin", { replace: true });
     })();
     return () => {
       active = false;
@@ -69,11 +59,7 @@ const AdminLogin = () => {
       return;
     }
 
-    if (next.startsWith("/admin") || next === "/") {
-      navigate(next, { replace: true });
-    } else {
-      window.location.replace(next);
-    }
+    navigate("/admin", { replace: true });
   };
 
   return (
