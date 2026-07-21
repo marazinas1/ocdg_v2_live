@@ -97,13 +97,50 @@ const FIXED_GROUPS: {
   label: string;
   required: number;
   allowExtra: boolean;
+  hint: string;
 }[] = [
-  { category: "hero", label: "Hero", required: 1, allowExtra: false },
-  { category: "card", label: "Card thumbnail", required: 1, allowExtra: false },
-  { category: "vision", label: "Vision image", required: 1, allowExtra: false },
-  { category: "exterior", label: "Exterior renderings", required: 3, allowExtra: true },
-  { category: "exterior_closeup", label: "Close-up exterior", required: 3, allowExtra: true },
-  { category: "interior", label: "Interior renderings", required: 6, allowExtra: true },
+  {
+    category: "hero",
+    label: "Hero",
+    required: 1,
+    allowExtra: false,
+    hint: "The large background image at the top of the page.",
+  },
+  {
+    category: "card",
+    label: "Card thumbnail",
+    required: 1,
+    allowExtra: false,
+    hint: "The image shown on listing cards across the site.",
+  },
+  {
+    category: "vision",
+    label: "Vision image",
+    required: 1,
+    allowExtra: false,
+    hint: "The featured image beside the Vision text.",
+  },
+  {
+    category: "exterior",
+    label: "Exterior renderings",
+    required: 3,
+    allowExtra: true,
+    hint: "The main exterior gallery.",
+  },
+  {
+    category: "exterior_closeup",
+    label: "Close-up exterior",
+    required: 3,
+    allowExtra: true,
+    hint: "Detail exterior shots, shown with the exterior gallery.",
+  },
+  {
+    category: "interior",
+    label: "Interior renderings",
+    required: 6,
+    allowExtra: true,
+    hint: "The interior gallery.",
+  },
 ];
 
 const CATEGORY_LABELS: Record<ImageCategory, string> = {
