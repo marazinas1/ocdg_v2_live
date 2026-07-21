@@ -99,8 +99,12 @@ const formatPhone = (raw: string) => {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
-const publicUrl = (path: string) =>
-  supabase.storage.from("property-images").getPublicUrl(path).data.publicUrl;
+const publicUrl = (path: string) => {
+  // Preview mode passes fully-resolved URLs (public URL for existing objects,
+  // blob: URL for pending file uploads). Pass those through untouched.
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  return supabase.storage.from("property-images").getPublicUrl(path).data.publicUrl;
+};
 
 const PageSkeleton = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -114,9 +118,27 @@ const PropertyPage = () => {
   const adminAuth = useAdminAuth();
   const isAdmin = adminAuth.status === "admin";
 
+  // Preview mode: renders unsaved form data from sessionStorage instead of
+  // fetching from the DB. Enabled when the admin form opens /admin/preview
+  // in a new tab. No DB reads/writes happen in this mode.
+  const isPreview = location.pathname === "/admin/preview";
+  const previewData = useMemo(() => {
+    if (!isPreview) return null;
+    try {
+      const raw = sessionStorage.getItem("admin-preview-property");
+      if (!raw) return null;
+      return JSON.parse(raw) as {
+        property: PropertyRow;
+        images: ImageRow[];
+      };
+    } catch {
+      return null;
+    }
+  }, [isPreview]);
+
   const propertyQuery = useQuery({
     queryKey: ["public-property", slug],
-    enabled: !!slug,
+    enabled: !!slug && !isPreview,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
@@ -128,7 +150,11 @@ const PropertyPage = () => {
     },
   });
 
-  const property = propertyQuery.data ?? null;
+  const property: (PropertyRow & { property_images: ImageRow[] }) | null = isPreview
+    ? previewData
+      ? { ...previewData.property, property_images: previewData.images }
+      : null
+    : propertyQuery.data ?? null;
 
   const images = useMemo(() => {
     const rows = (property?.property_images ?? []) as ImageRow[];
@@ -219,22 +245,36 @@ const PropertyPage = () => {
   const { ref: registerRef, isVisible: registerVisible } = useScrollReveal();
 
   // Loading / not-found gates
-  if (propertyQuery.isLoading) {
+  if (isPreview && !previewData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6 text-center">
+        <div>
+          <p className="text-lg font-serif text-charcoal mb-2">No preview data</p>
+          <p className="text-sm text-slate-500">
+            Open this preview from the admin property form's Preview button.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  if (!isPreview && propertyQuery.isLoading) {
     return <PageSkeleton />;
   }
   if (!property) {
     return <Navigate to="/404" replace />;
   }
-  // Record-only entries (imported MLS past developments) have no full page.
-  // Bounce to 404 so they never render as an orphan property page.
-  if (!property.has_page) {
-    return <Navigate to="/404" replace />;
-  }
-  if (!property.published && !isAdmin && adminAuth.status !== "loading") {
-    return <Navigate to="/404" replace />;
-  }
-  if (!property.published && adminAuth.status === "loading") {
-    return <PageSkeleton />;
+  // Preview bypasses has_page / published gates so admins can see the page
+  // exactly as it will render before publishing.
+  if (!isPreview) {
+    if (!property.has_page) {
+      return <Navigate to="/404" replace />;
+    }
+    if (!property.published && !isAdmin && adminAuth.status !== "loading") {
+      return <Navigate to="/404" replace />;
+    }
+    if (!property.published && adminAuth.status === "loading") {
+      return <PageSkeleton />;
+    }
   }
 
   const statusLabel =

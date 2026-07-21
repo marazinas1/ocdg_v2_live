@@ -97,13 +97,50 @@ const FIXED_GROUPS: {
   label: string;
   required: number;
   allowExtra: boolean;
+  hint: string;
 }[] = [
-  { category: "hero", label: "Hero", required: 1, allowExtra: false },
-  { category: "card", label: "Card thumbnail", required: 1, allowExtra: false },
-  { category: "vision", label: "Vision image", required: 1, allowExtra: false },
-  { category: "exterior", label: "Exterior renderings", required: 3, allowExtra: true },
-  { category: "exterior_closeup", label: "Close-up exterior", required: 3, allowExtra: true },
-  { category: "interior", label: "Interior renderings", required: 6, allowExtra: true },
+  {
+    category: "hero",
+    label: "Hero",
+    required: 1,
+    allowExtra: false,
+    hint: "The large background image at the top of the page.",
+  },
+  {
+    category: "card",
+    label: "Card thumbnail",
+    required: 1,
+    allowExtra: false,
+    hint: "The image shown on listing cards across the site.",
+  },
+  {
+    category: "vision",
+    label: "Vision image",
+    required: 1,
+    allowExtra: false,
+    hint: "The featured image beside the Vision text.",
+  },
+  {
+    category: "exterior",
+    label: "Exterior renderings",
+    required: 3,
+    allowExtra: true,
+    hint: "The main exterior gallery.",
+  },
+  {
+    category: "exterior_closeup",
+    label: "Close-up exterior",
+    required: 3,
+    allowExtra: true,
+    hint: "Detail exterior shots, shown with the exterior gallery.",
+  },
+  {
+    category: "interior",
+    label: "Interior renderings",
+    required: 6,
+    allowExtra: true,
+    hint: "The interior gallery.",
+  },
 ];
 
 const CATEGORY_LABELS: Record<ImageCategory, string> = {
@@ -833,6 +870,80 @@ function FormInner() {
     navigate("/admin", { replace: true });
   };
 
+  // Preview: serialize current form state into sessionStorage and open the
+  // public PropertyPage in preview mode in a new tab. Nothing is written to
+  // the DB or storage — pending files render from their local blob: URLs and
+  // existing objects render from their public storage URLs.
+  const handlePreview = () => {
+    const slotToRow = (slot: ImageSlot, idx: number) => ({
+      id: slot.kind === "existing" ? slot.dbId : slot.localId,
+      property_id: id ?? "preview",
+      category: slot.category,
+      floor_plan_id: slot.floor_plan_id,
+      // publicUrl() in PropertyPage passes through http(s):/blob:/data: URLs
+      // untouched, so we resolve here and the preview renders faithfully.
+      storage_path:
+        slot.kind === "existing"
+          ? getPublicUrl(slot.storage_path)
+          : slot.previewUrl,
+      alt_text:
+        slot.alt_text ||
+        `${title.trim() || "Property"} - ${CATEGORY_LABELS[slot.category]}`,
+      sort_order: idx,
+    });
+
+    const images: ReturnType<typeof slotToRow>[] = [];
+    for (const cat of Object.keys(slotsByCategory)) {
+      const cur = slotsByCategory[cat] ?? [];
+      cur.forEach((slot, i) => images.push(slotToRow(slot, i)));
+    }
+
+    const property = {
+      id: id ?? "preview",
+      slug: slug.trim() || "preview",
+      title: title.trim() || "Untitled property",
+      unit: unit || null,
+      headline: headline || null,
+      tagline: tagline || null,
+      description: description || null,
+      price: price || null,
+      status,
+      bedrooms: bedrooms ? parseInt(bedrooms, 10) : null,
+      full_baths: fullBaths ? parseInt(fullBaths, 10) : null,
+      half_baths: halfBaths ? parseInt(halfBaths, 10) : null,
+      total_rooms: totalRooms ? parseInt(totalRooms, 10) : null,
+      sqft: sqft ? parseInt(sqft, 10) : null,
+      location_neighborhood: neighborhood || null,
+      location_city: city || null,
+      location_state: state || null,
+      location_highlight: locationHighlight || null,
+      location_heading: locationHeading || null,
+      highlights: highlights.filter((h) => h.value.trim() || h.label.trim()),
+      vision_headline: visionHeadline || null,
+      vision_floors: visionFloors.filter((f) => f.label.trim() || f.body.trim()),
+      vision_caption_eyebrow: visionCaptionEyebrow || null,
+      vision_caption_title: visionCaptionTitle || null,
+      map_embed_query: mapEmbedQuery || null,
+      specs,
+      floor_plans: floorPlans,
+      luxury_features: luxuryFeatures,
+      location_features: locationFeatures,
+      published,
+      has_page: hasPage,
+      mls_url: mlsUrl.trim() || null,
+    };
+
+    try {
+      sessionStorage.setItem(
+        "admin-preview-property",
+        JSON.stringify({ property, images }),
+      );
+      window.open("/admin/preview", "_blank", "noopener");
+    } catch (err: any) {
+      toast.error(`Preview failed: ${err?.message ?? "unknown error"}`);
+    }
+  };
+
   if (isEdit && isLoading) {
     return <div className="py-16 text-center text-slate-500">Loading…</div>;
   }
@@ -888,6 +999,9 @@ function FormInner() {
               </AlertDialogContent>
             </AlertDialog>
           )}
+          <Button variant="outline" onClick={handlePreview} disabled={saving}>
+            Preview
+          </Button>
           <Button onClick={handleSave} disabled={saving || !canSave}>
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isEdit ? "Save changes" : "Create property"}
@@ -1297,10 +1411,11 @@ function FormInner() {
             for (let i = 0; i < slotCount; i++) items.push(cur[i] ?? null);
             return (
               <div key={group.category}>
-                <h3 className="text-sm font-semibold text-slate-900 mb-3">
+                <h3 className="text-sm font-semibold text-slate-900">
                   {group.label} · {cur.length}/{group.required}
                   {group.allowExtra ? "+" : ""}
                 </h3>
+                <p className="text-xs text-slate-500 mb-3">{group.hint}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {items.map((slot, i) => (
                     <ImageSlotBox
@@ -1353,6 +1468,9 @@ function FormInner() {
           <CardTitle>Floor plans</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-xs text-slate-500 -mt-2">
+            Shown as tabs in the Floor Plans section, one per level.
+          </p>
           {floorPlans.map((fp, idx) => {
             const img = floorPlanImageFor(fp.id);
             return (
