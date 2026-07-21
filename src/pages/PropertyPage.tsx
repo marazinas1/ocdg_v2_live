@@ -125,7 +125,7 @@ const PropertyPage = () => {
   const previewData = useMemo(() => {
     if (!isPreview) return null;
     try {
-      const raw = sessionStorage.getItem("admin-preview-property");
+      const raw = localStorage.getItem("admin-preview-property");
       if (!raw) return null;
       return JSON.parse(raw) as {
         property: PropertyRow;
