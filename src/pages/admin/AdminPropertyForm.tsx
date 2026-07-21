@@ -141,6 +141,13 @@ const FIXED_GROUPS: {
     allowExtra: true,
     hint: "The interior gallery.",
   },
+  {
+    category: "photo",
+    label: "Real Photos (after construction)",
+    required: 6,
+    allowExtra: true,
+    hint: "Actual photographs of the finished home. Shown in a separate 'A Closer Look' gallery, below the renderings.",
+  },
 ];
 
 const CATEGORY_LABELS: Record<ImageCategory, string> = {
@@ -151,6 +158,7 @@ const CATEGORY_LABELS: Record<ImageCategory, string> = {
   interior: "Interior",
   vision: "Vision",
   floor_plan: "Floor plan",
+  photo: "Photo",
 };
 
 function newLocalId() {
