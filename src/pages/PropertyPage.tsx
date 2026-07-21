@@ -178,6 +178,10 @@ const PropertyPage = () => {
     src: publicUrl(r.storage_path),
     alt: r.alt_text ?? property?.title ?? "",
   }));
+  const photoImages: GalleryImage[] = (grouped.photo ?? []).map((r) => ({
+    src: publicUrl(r.storage_path),
+    alt: r.alt_text ?? property?.title ?? "",
+  }));
   const allGallery = [...exteriorImages, ...interiorImages];
 
   const visionImageRow = grouped.vision?.[0] ?? null;
