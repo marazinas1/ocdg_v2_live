@@ -1334,10 +1334,11 @@ function FormInner() {
             for (let i = 0; i < slotCount; i++) items.push(cur[i] ?? null);
             return (
               <div key={group.category}>
-                <h3 className="text-sm font-semibold text-slate-900 mb-3">
+                <h3 className="text-sm font-semibold text-slate-900">
                   {group.label} · {cur.length}/{group.required}
                   {group.allowExtra ? "+" : ""}
                 </h3>
+                <p className="text-xs text-slate-500 mb-3">{group.hint}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {items.map((slot, i) => (
                     <ImageSlotBox
