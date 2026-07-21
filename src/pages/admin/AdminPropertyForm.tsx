@@ -944,7 +944,12 @@ function FormInner() {
     };
 
     try {
-      sessionStorage.setItem(
+      // Use localStorage rather than sessionStorage: window.open with
+      // "noopener" (which we want, to avoid leaking the admin tab) does NOT
+      // clone sessionStorage into the new tab, so the preview would render
+      // "No preview data". localStorage is shared across tabs on the same
+      // origin and works from both the new-property and edit forms.
+      localStorage.setItem(
         "admin-preview-property",
         JSON.stringify({ property, images }),
       );
