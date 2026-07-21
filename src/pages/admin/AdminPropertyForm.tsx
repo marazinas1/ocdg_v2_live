@@ -1391,6 +1391,9 @@ function FormInner() {
           <CardTitle>Floor plans</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-xs text-slate-500 -mt-2">
+            Shown as tabs in the Floor Plans section, one per level.
+          </p>
           {floorPlans.map((fp, idx) => {
             const img = floorPlanImageFor(fp.id);
             return (
