@@ -141,6 +141,13 @@ const FIXED_GROUPS: {
     allowExtra: true,
     hint: "The interior gallery.",
   },
+  {
+    category: "photo",
+    label: "Real Photos (after construction)",
+    required: 6,
+    allowExtra: true,
+    hint: "Actual photographs of the finished home. Shown in a separate 'A Closer Look' gallery, below the renderings.",
+  },
 ];
 
 const CATEGORY_LABELS: Record<ImageCategory, string> = {
@@ -151,6 +158,7 @@ const CATEGORY_LABELS: Record<ImageCategory, string> = {
   interior: "Interior",
   vision: "Vision",
   floor_plan: "Floor plan",
+  photo: "Photo",
 };
 
 function newLocalId() {
@@ -339,6 +347,7 @@ function FormInner() {
     exterior_closeup: [],
     interior: [],
     floor_plan: [],
+    photo: [],
   });
 
   // Deleted rows to remove from storage/db on save.
@@ -428,6 +437,7 @@ function FormInner() {
       exterior_closeup: [],
       interior: [],
       floor_plan: [],
+      photo: [],
     };
     const rows: ExistingImage[] = existing.images as any;
     for (const img of rows) {
@@ -934,7 +944,12 @@ function FormInner() {
     };
 
     try {
-      sessionStorage.setItem(
+      // Use localStorage rather than sessionStorage: window.open with
+      // "noopener" (which we want, to avoid leaking the admin tab) does NOT
+      // clone sessionStorage into the new tab, so the preview would render
+      // "No preview data". localStorage is shared across tabs on the same
+      // origin and works from both the new-property and edit forms.
+      localStorage.setItem(
         "admin-preview-property",
         JSON.stringify({ property, images }),
       );

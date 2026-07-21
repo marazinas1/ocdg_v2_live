@@ -7,7 +7,8 @@ export type ImageCategory =
   | "exterior_closeup"
   | "interior"
   | "vision"
-  | "floor_plan";
+  | "floor_plan"
+  | "photo";
 
 const LONG_EDGE: Record<ImageCategory, number> = {
   hero: 2400,
@@ -17,6 +18,7 @@ const LONG_EDGE: Record<ImageCategory, number> = {
   interior: 2400,
   vision: 2400,
   floor_plan: 2400,
+  photo: 2400,
 };
 
 const BUCKET = "property-images";

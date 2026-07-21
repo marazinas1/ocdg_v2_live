@@ -125,7 +125,7 @@ const PropertyPage = () => {
   const previewData = useMemo(() => {
     if (!isPreview) return null;
     try {
-      const raw = sessionStorage.getItem("admin-preview-property");
+      const raw = localStorage.getItem("admin-preview-property");
       if (!raw) return null;
       return JSON.parse(raw) as {
         property: PropertyRow;
@@ -175,6 +175,10 @@ const PropertyPage = () => {
     (r) => ({ src: publicUrl(r.storage_path), alt: r.alt_text ?? property?.title ?? "" })
   );
   const interiorImages: GalleryImage[] = (grouped.interior ?? []).map((r) => ({
+    src: publicUrl(r.storage_path),
+    alt: r.alt_text ?? property?.title ?? "",
+  }));
+  const photoImages: GalleryImage[] = (grouped.photo ?? []).map((r) => ({
     src: publicUrl(r.storage_path),
     alt: r.alt_text ?? property?.title ?? "",
   }));
@@ -835,6 +839,41 @@ const PropertyPage = () => {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {/* A Closer Look — real photographs of the finished home */}
+      {photoImages.length > 0 && (
+        <section id="closer-look" className="section-padding">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
+            <div className="text-center max-w-2xl mx-auto mb-8 md:mb-12">
+              <p className="label-uppercase mb-4">Photography</p>
+              <h2 className="heading-section text-charcoal">A Closer Look</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+              {photoImages.map((image, index) => (
+                <div
+                  key={index}
+                  className={`overflow-hidden group ${
+                    index === 0 ? "sm:col-span-2 lg:col-span-2 lg:row-span-2" : ""
+                  }`}
+                  style={{ borderRadius: "4px" }}
+                >
+                  <div className="relative h-full">
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      className={`w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${
+                        index === 0 ? "aspect-[4/3]" : "aspect-square"
+                      }`}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       )}
 

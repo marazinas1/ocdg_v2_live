@@ -1,0 +1,2 @@
+ALTER TABLE public.property_images DROP CONSTRAINT IF EXISTS property_images_category_check;
+ALTER TABLE public.property_images ADD CONSTRAINT property_images_category_check CHECK (category = ANY (ARRAY['hero'::text, 'card'::text, 'exterior'::text, 'exterior_closeup'::text, 'interior'::text, 'floor_plan'::text, 'vision'::text, 'photo'::text]));
