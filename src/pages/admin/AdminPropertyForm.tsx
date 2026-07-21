@@ -347,6 +347,7 @@ function FormInner() {
     exterior_closeup: [],
     interior: [],
     floor_plan: [],
+    photo: [],
   });
 
   // Deleted rows to remove from storage/db on save.
@@ -436,6 +437,7 @@ function FormInner() {
       exterior_closeup: [],
       interior: [],
       floor_plan: [],
+      photo: [],
     };
     const rows: ExistingImage[] = existing.images as any;
     for (const img of rows) {
