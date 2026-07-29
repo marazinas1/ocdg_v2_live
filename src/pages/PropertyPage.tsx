@@ -288,12 +288,12 @@ const PropertyPage = () => {
 
   const bathTotal =
     property.full_baths != null
-      ? `${property.full_baths}${property.half_baths ? `.${property.half_baths}` : ""}`
+      ? (() => {
+          const v = property.full_baths + (property.half_baths ?? 0) * 0.5;
+          return Number.isInteger(v) ? `${v}` : `${v.toFixed(1)}`;
+        })()
       : null;
 
-  // Bar bathrooms use full + half*0.5 (e.g. 5 + 1*0.5 = "5.5"), faithful to
-  // the static HighlightsBar. The Vision mini-card below still uses the
-  // "full.half" shorthand ("5.1") — also faithful to the static pages.
   const bathBar =
     property.full_baths != null
       ? (() => {
