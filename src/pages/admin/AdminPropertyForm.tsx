@@ -111,7 +111,7 @@ const FIXED_GROUPS: {
     label: "Card thumbnail",
     required: 1,
     allowExtra: false,
-    hint: "The image shown on listing cards across the site.",
+    hint: "The image shown on listing cards across the site. Leave empty to automatically use the Hero image — only upload here if you want a different thumbnail on listing cards.",
   },
   {
     category: "vision",
