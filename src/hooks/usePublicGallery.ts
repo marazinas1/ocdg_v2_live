@@ -17,7 +17,7 @@ const publicUrl = (path: string) =>
 
 /**
  * Loads gallery-eligible images for every published property, grouped by property.
- * Exterior bucket = exterior + exterior_closeup. Interior bucket = interior.
+ * Exterior bucket = exterior. Interior bucket = interior.
  * Properties are ordered newest listed first (nulls last, then created_at desc).
  */
 export function usePublicGallery() {
@@ -42,7 +42,7 @@ export function usePublicGallery() {
         .from("property_images")
         .select("property_id, category, storage_path, alt_text, sort_order")
         .in("property_id", properties.map((p) => p.id))
-        .in("category", ["exterior", "exterior_closeup", "interior"])
+        .in("category", ["exterior", "interior"])
         .order("sort_order", { ascending: true });
       if (imgErr) throw imgErr;
 

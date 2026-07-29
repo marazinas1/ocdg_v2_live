@@ -171,7 +171,7 @@ const PropertyPage = () => {
 
   const heroImage = grouped.hero?.[0] ?? null;
   const cardImage = grouped.card?.[0] ?? null;
-  const exteriorImages: GalleryImage[] = (grouped.exterior ?? grouped.exterior_closeup ?? []).map(
+  const exteriorImages: GalleryImage[] = (grouped.exterior ?? []).map(
     (r) => ({ src: publicUrl(r.storage_path), alt: r.alt_text ?? property?.title ?? "" })
   );
   const interiorImages: GalleryImage[] = (grouped.interior ?? []).map((r) => ({
