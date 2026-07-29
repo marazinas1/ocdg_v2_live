@@ -4,7 +4,6 @@ export type ImageCategory =
   | "hero"
   | "card"
   | "exterior"
-  | "exterior_closeup"
   | "interior"
   | "vision"
   | "floor_plan"
@@ -14,7 +13,6 @@ const LONG_EDGE: Record<ImageCategory, number> = {
   hero: 2400,
   card: 800,
   exterior: 2400,
-  exterior_closeup: 2400,
   interior: 2400,
   vision: 2400,
   floor_plan: 2400,
