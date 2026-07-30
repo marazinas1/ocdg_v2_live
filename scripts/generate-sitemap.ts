@@ -5,7 +5,7 @@
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 
-const BASE_URL = "https://www.oceancitydevelopment.com";
+const BASE_URL = "https://oceancitydevelopment.com";
 
 const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL ?? "https://axnosviewcbhmpzsnpco.supabase.co";

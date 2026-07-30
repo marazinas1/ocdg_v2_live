@@ -8,7 +8,7 @@ interface SEOProps {
   type?: "website" | "article";
 }
 
-const SITE = "https://www.oceancitydevelopment.com";
+const SITE = "https://oceancitydevelopment.com";
 
 const SEO = ({ title, description, path, image, type = "website" }: SEOProps) => {
   const url = `${SITE}${path}`;

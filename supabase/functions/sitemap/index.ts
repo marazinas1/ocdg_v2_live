@@ -1,7 +1,7 @@
 // Dynamic sitemap: static pages + every published property at /developments/:slug.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BASE_URL = "https://www.oceancitydevelopment.com";
+const BASE_URL = "https://oceancitydevelopment.com";
 
 const STATIC_PAGES: Array<{ path: string; changefreq: string; priority: string }> = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
