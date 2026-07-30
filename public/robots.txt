@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://www.oceancitydevelopment.com/sitemap.xml
+Sitemap: https://oceancitydevelopment.com/sitemap.xml
