@@ -31,11 +31,13 @@ const Developments = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const filterParam = searchParams.get("filter") || "all";
+  const normalizeFilter = (v: string | null) =>
+    v === "active" || v === "under-contract" || v === "current" ? "current" : v === "sold" ? "sold" : "all";
+  const filterParam = normalizeFilter(searchParams.get("filter"));
   const [activeTab, setActiveTab] = useState<string>(filterParam);
 
   useEffect(() => {
-    setActiveTab(searchParams.get("filter") || "all");
+    setActiveTab(normalizeFilter(searchParams.get("filter")));
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
