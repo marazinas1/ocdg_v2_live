@@ -9,17 +9,16 @@ import { usePublicProperties } from "@/hooks/usePublicProperties";
 import { STATUS_BADGE_CLASSES, STATUS_LABELS, type PropertyStatus } from "@/lib/admin/status";
 
 type DevStatus = "active" | "under-contract" | "sold";
+type DevGroup = "current" | "sold";
 
-const tabs: { label: string; value: DevStatus | "all" }[] = [
+const tabs: { label: string; value: DevGroup | "all" }[] = [
   { label: "All", value: "all" },
-  { label: "Active Listings", value: "active" },
-  { label: "Under Contract", value: "under-contract" },
+  { label: "Current Developments", value: "current" },
   { label: "Sold", value: "sold" },
 ];
 
-const seeAllLinks: Record<DevStatus, { label: string; href: string }> = {
-  active: { label: "See All Active Listings", href: "/developments/active-listings" },
-  "under-contract": { label: "See All Under Contract", href: "/developments/under-contract" },
+const seeAllLinks: Record<DevGroup, { label: string; href: string }> = {
+  current: { label: "See All Current Developments", href: "/developments?filter=current" },
   sold: { label: "See All Sold", href: "/developments/sold" },
 };
 
@@ -82,22 +81,19 @@ const Developments = () => {
   // For "all" view, group by status and show max 3 per category
   const isAllView = activeTab === "all";
 
-  const renderCategorySection = (status: DevStatus, items: Dev[]) => {
-    const info = seeAllLinks[status];
-    const categoryLabels: Record<DevStatus, string> = {
-      active: "Active Listings",
-      "under-contract": "Under Contract",
+  const renderCategorySection = (group: DevGroup, items: Dev[]) => {
+    const info = seeAllLinks[group];
+    const categoryLabels: Record<DevGroup, string> = {
+      current: "Current Developments",
       sold: "Sold",
     };
 
-    const propStatus: PropertyStatus =
-      status === "active" ? "active" : status === "under-contract" ? "under_contract" : "sold";
-    const badgeClass = STATUS_BADGE_CLASSES[propStatus];
-    const badgeLabel = STATUS_LABELS[propStatus];
+    const toPropStatus = (s: DevStatus): PropertyStatus =>
+      s === "active" ? "active" : s === "under-contract" ? "under_contract" : "sold";
 
     return (
-      <div key={status} className="mb-16 last:mb-0">
-        <h2 className="heading-section text-charcoal text-xl mb-8">{categoryLabels[status]}</h2>
+      <div key={group} className="mb-16 last:mb-0">
+        <h2 className="heading-section text-charcoal text-xl mb-8">{categoryLabels[group]}</h2>
         <PropertyCarousel
           items={items.map((dev) => ({
             title: dev.title,
@@ -106,8 +102,8 @@ const Developments = () => {
             location: dev.location,
             description: dev.description,
             price: dev.price,
-            badgeLabel,
-            badgeColor: badgeClass,
+            badgeLabel: STATUS_LABELS[toPropStatus(dev.status)],
+            badgeColor: STATUS_BADGE_CLASSES[toPropStatus(dev.status)],
           }))}
         />
         {items.length > 0 && (
@@ -121,13 +117,11 @@ const Developments = () => {
     );
   };
 
-  const filtered = activeTab === "all"
-    ? allDevelopments
-    : allDevelopments.filter((d) => d.status === activeTab);
-
-  const activeDevs = allDevelopments.filter((d) => d.status === "active");
-  const underContractDevs = allDevelopments.filter((d) => d.status === "under-contract");
   const soldDevs = allDevelopments.filter((d) => d.status === "sold");
+  const currentDevs = allDevelopments.filter(
+    (d) => d.status === "active" || d.status === "under-contract",
+  );
+  const filtered = activeTab === "sold" ? soldDevs : currentDevs;
 
   return (
     <main className="min-h-screen bg-background">
@@ -171,8 +165,7 @@ const Developments = () => {
 
           {isAllView ? (
             <>
-              {activeDevs.length > 0 && renderCategorySection("active", activeDevs)}
-              {underContractDevs.length > 0 && renderCategorySection("under-contract", underContractDevs)}
+              {currentDevs.length > 0 && renderCategorySection("current", currentDevs)}
               {soldDevs.length > 0 && renderCategorySection("sold", soldDevs)}
             </>
           ) : isLoading ? (
@@ -185,7 +178,7 @@ const Developments = () => {
               <p className="text-small mt-2">Check back soon for updates.</p>
             </div>
           ) : (
-            renderCategorySection(activeTab as DevStatus, filtered)
+            renderCategorySection(activeTab as DevGroup, filtered)
           )}
         </div>
       </section>
