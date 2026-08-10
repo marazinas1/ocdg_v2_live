@@ -125,6 +125,8 @@ const MobileCarousel = ({ children, itemCount }: { children: React.ReactNode[]; 
           <button
             key={i}
             onClick={() => emblaApi?.scrollTo(i)}
+            aria-label={`Go to slide ${i + 1} of ${itemCount}`}
+            aria-current={i === selected}
             className={`w-2 h-2 rounded-full transition-all duration-300 ${i === selected ? "bg-charcoal w-6" : "bg-border hover:bg-muted-slate"}`}
           />
         ))}
