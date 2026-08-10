@@ -87,7 +87,23 @@ const Testimonials = () => {
   return (
     <main className="min-h-screen bg-background">
       <GlobalNav />
-      <SEO title={"Testimonials — Ocean City Development Group"} description={"What clients say about building their dream coastal homes with Ocean City Development Group."} path="/testimonials" />
+      <SEO
+        title={"Testimonials — Ocean City Development Group"}
+        description={"What clients say about building their dream coastal homes with Ocean City Development Group."}
+        path="/testimonials"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "HomeAndConstructionBusiness",
+          "@id": "https://oceancitydevelopment.com/#organization",
+          name: "Ocean City Development Group",
+          url: "https://oceancitydevelopment.com/testimonials",
+          review: testimonials.map((t) => ({
+            "@type": "Review",
+            author: { "@type": "Person", name: t.author },
+            reviewBody: t.paragraphs.join(" "),
+          })),
+        }}
+      />
 
       {/* Hero */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
