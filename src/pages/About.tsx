@@ -9,7 +9,7 @@ import ocdgLogo from "@/assets/ocdg-logo.png";
 import hallidayLeonardLogo from "@/assets/partner-halliday-leonard.jpg";
 import approachImage from "@/assets/28th-approach-v4.jpg";
 
-import patrickPhoto from "@/assets/patrick-halliday.jpg";
+import patrickPhoto from "@/assets/patrick-halliday.png";
 
 const About = () => {
   const [scrollY, setScrollY] = useState(0);
