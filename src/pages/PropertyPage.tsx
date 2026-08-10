@@ -339,6 +339,54 @@ const PropertyPage = () => {
     property.description ??
     `${property.title} — Ocean City Development Group`;
 
+  const listingJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: property.title,
+    description: seoDescription,
+    url: `https://oceancitydevelopment.com${location.pathname}`,
+    ...(heroUrl ? { image: heroUrl } : {}),
+    provider: {
+      "@type": "Organization",
+      "@id": "https://oceancitydevelopment.com/#organization",
+      name: "Ocean City Development Group",
+    },
+    ...(property.location_city
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: property.location_city,
+            ...(property.location_state ? { addressRegion: property.location_state } : {}),
+            addressCountry: "US",
+          },
+        }
+      : {}),
+    ...(property.bedrooms != null || property.full_baths != null || property.sqft != null
+      ? {
+          mainEntity: {
+            "@type": "SingleFamilyResidence",
+            name: property.title,
+            ...(property.bedrooms != null ? { numberOfBedrooms: property.bedrooms } : {}),
+            ...(property.full_baths != null
+              ? {
+                  numberOfBathroomsTotal:
+                    property.full_baths + (property.half_baths ?? 0) * 0.5,
+                }
+              : {}),
+            ...(property.sqft != null
+              ? {
+                  floorSize: {
+                    "@type": "QuantitativeValue",
+                    value: property.sqft,
+                    unitCode: "FTK",
+                  },
+                }
+              : {}),
+          },
+        }
+      : {}),
+  };
+
   return (
     <main className="min-h-screen">
       <SEO
@@ -346,6 +394,7 @@ const PropertyPage = () => {
         description={seoDescription.slice(0, 158)}
         path={location.pathname}
         image={cardImage ? publicUrl(cardImage.storage_path) : heroUrl ?? undefined}
+        jsonLd={listingJsonLd}
       />
       <GlobalNav />
 
