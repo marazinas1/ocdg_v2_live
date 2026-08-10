@@ -115,26 +115,36 @@ const About = () => {
 
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 text-left">
             {/* Halliday Architects */}
-            <div className="flex flex-col items-center text-center">
+            <a
+              href="https://www.hallidayarchitects.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center text-center group cursor-pointer"
+            >
               <div className="h-20 flex items-center justify-center mb-6">
-                <img src={hallidayLogo} alt="Halliday Architects" className="max-h-16 w-auto object-contain" loading="lazy" decoding="async" />
+                <img src={hallidayLogo} alt="Halliday Architects" className="max-h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105" loading="lazy" decoding="async" />
               </div>
-              <h3 className="font-serif text-2xl text-charcoal mb-4">Halliday Architects</h3>
+              <h3 className="font-serif text-2xl text-charcoal mb-4 group-hover:underline decoration-1 underline-offset-4">Halliday Architects</h3>
               <p className="text-body leading-relaxed">
                 Every Ocean City Development Group project is brought to life in collaboration with Halliday Architects, whose award-winning designs blend coastal elegance with modern functionality.
               </p>
-            </div>
+            </a>
 
             {/* Halliday-Leonard General Contractors */}
-            <div className="flex flex-col items-center text-center">
+            <a
+              href="https://www.hallidayleonardllc.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center text-center group cursor-pointer"
+            >
               <div className="h-20 flex items-center justify-center mb-6">
-                <img src={hallidayLeonardLogo} alt="Halliday-Leonard Custom Home Builders" className="max-h-20 w-auto object-contain" loading="lazy" decoding="async" />
+                <img src={hallidayLeonardLogo} alt="Halliday-Leonard Custom Home Builders" className="max-h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105" loading="lazy" decoding="async" />
               </div>
-              <h3 className="font-serif text-2xl text-charcoal mb-4">Halliday-Leonard Custom Home Builders</h3>
+              <h3 className="font-serif text-2xl text-charcoal mb-4 group-hover:underline decoration-1 underline-offset-4">Halliday-Leonard Custom Home Builders</h3>
               <p className="text-body leading-relaxed">
                 Our trusted construction partner, Halliday-Leonard delivers master-level craftsmanship on every residence — combining decades of building expertise with an unwavering commitment to quality.
               </p>
-            </div>
+            </a>
           </div>
         </div>
       </section>
