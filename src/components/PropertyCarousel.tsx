@@ -96,7 +96,7 @@ const PropertyCarousel = ({ items }: PropertyCarouselProps) => {
         <div className="flex -ml-8">
           {loopItems.map((item) => (
             <div key={item.loopKey} className="min-w-0 shrink-0 grow-0 basis-full md:basis-1/3 pl-8">
-              <div className="card-elegant overflow-hidden group h-full flex flex-col">
+              <Link to={item.link} className="card-elegant overflow-hidden group h-full flex flex-col">
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted flex-shrink-0">
                   <img
                     src={item.image}
@@ -118,11 +118,9 @@ const PropertyCarousel = ({ items }: PropertyCarouselProps) => {
                   <h3 className="heading-card text-charcoal mb-2">{item.title}</h3>
                   {item.price && <p className="text-sm font-serif text-charcoal mb-1">{item.price}</p>}
                   <p className="text-body text-sm mb-5 flex-grow">{item.description}</p>
-                  <Link to={item.link} className="btn-primary text-xs w-full justify-center">
-                    View Project
-                  </Link>
+                  <span className="btn-primary text-xs w-full justify-center">View Project</span>
                 </div>
-              </div>
+              </Link>
             </div>
           ))}
         </div>

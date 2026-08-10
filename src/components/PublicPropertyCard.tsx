@@ -57,15 +57,12 @@ const PublicPropertyCard = ({
           </p>
         )}
         {showCTA && (
-          <Link to={href} className="btn-primary text-xs w-full justify-center mt-auto">
-            View Project
-          </Link>
+          <span className="btn-primary text-xs w-full justify-center mt-auto">View Project</span>
         )}
       </div>
     </div>
   );
 
-  if (showCTA) return body;
   return (
     <Link to={href} className="block h-full">
       {body}
