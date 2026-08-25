@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import ocdgLogo from "@/assets/ocdg-logo.png";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -63,75 +64,93 @@ const AdminLogin = () => {
   };
 
   return (
-    <main className="min-h-screen bg-background-sand flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <p className="text-xs tracking-[0.3em] uppercase text-muted-slate mb-4">
-            Ocean City Development Group
-          </p>
-          <h1 className="text-3xl md:text-4xl text-charcoal">Administrator Sign In</h1>
-          <div className="mt-6 mx-auto h-px w-12 bg-charcoal/20" />
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="bg-card border border-border-subtle rounded p-8 space-y-6"
-        >
-          <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="block text-xs tracking-[0.2em] uppercase text-slate"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-background border border-input rounded text-charcoal focus:outline-none focus:ring-1 focus:ring-charcoal transition"
-            />
+    <main className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-background-sand">
+      {/* Left — sign-in */}
+      <div className="flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md">
+          {/* The branded panel is hidden on small screens, so show the mark here. */}
+          <div className="md:hidden mb-10">
+            <img src={ocdgLogo} alt="Ocean City Development Group" className="h-10 w-auto" />
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="password"
-              className="block text-xs tracking-[0.2em] uppercase text-slate"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-background border border-input rounded text-charcoal focus:outline-none focus:ring-1 focus:ring-charcoal transition"
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
+          <div className="mb-10">
+            <p className="text-xs tracking-[0.3em] uppercase text-muted-slate mb-4">
+              Administrator
             </p>
-          )}
+            <h1 className="text-3xl text-charcoal">Sign in</h1>
+            <div className="mt-6 h-px w-12 bg-charcoal/20" />
+          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full inline-flex items-center justify-center px-8 py-3 text-sm font-medium tracking-wider uppercase bg-charcoal text-white rounded hover:bg-charcoal/90 transition disabled:opacity-60"
-          >
-            {loading ? "Signing In…" : "Sign In"}
-          </button>
-        </form>
+          <div className="bg-card border border-border-subtle rounded p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="block text-xs tracking-[0.2em] uppercase text-slate"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 bg-background border border-input rounded text-charcoal focus:outline-none focus:ring-1 focus:ring-charcoal transition"
+                />
+              </div>
 
-        <p className="mt-8 text-center text-xs tracking-[0.15em] uppercase text-muted-slate">
-          Authorized Personnel Only
-        </p>
+              <div className="space-y-2">
+                <label
+                  htmlFor="password"
+                  className="block text-xs tracking-[0.2em] uppercase text-slate"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-background border border-input rounded text-charcoal focus:outline-none focus:ring-1 focus:ring-charcoal transition"
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full inline-flex items-center justify-center px-8 py-3 text-sm font-medium tracking-wider uppercase bg-charcoal text-white rounded hover:bg-charcoal/90 transition disabled:opacity-60"
+              >
+                {loading ? "Signing In…" : "Sign In"}
+              </button>
+            </form>
+          </div>
+
+          <p className="mt-8 text-xs tracking-[0.15em] uppercase text-muted-slate">
+            Authorized Personnel Only
+          </p>
+        </div>
       </div>
+
+      {/* Right — branded panel */}
+      <aside className="hidden md:flex flex-col items-center justify-center bg-charcoal px-16 py-24">
+        <img
+          src={ocdgLogo}
+          alt="Ocean City Development Group"
+          className="h-16 w-auto"
+          style={{ filter: "brightness(0) invert(1)" }}
+        />
+        <div className="mt-10 h-px w-12 bg-white/20" />
+      </aside>
     </main>
   );
 };
