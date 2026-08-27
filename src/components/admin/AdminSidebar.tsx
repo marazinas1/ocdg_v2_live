@@ -62,6 +62,7 @@ export default function AdminSidebar({
   const navigate = useNavigate();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
+  const { data: unreadCount = 0 } = useUnreadInquiryCount();
 
   const signOut = async () => {
     await supabase.auth.signOut();
