@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowDown, ArrowUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import AdminProtected from "@/components/admin/AdminProtected";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,7 @@ import {
  * Client testimonials. Nothing appears on the public /testimonials page until a
  * quote is published.
  */
-export default function AdminTestimonials() {
+function AdminTestimonialsInner() {
   const { data: items = [], isLoading } = useAdminTestimonials();
   const save = useSaveTestimonial();
   const setPublished = useUpdateTestimonialPublished();
@@ -288,5 +289,13 @@ export default function AdminTestimonials() {
         </ul>
       )}
     </div>
+  );
+}
+
+export default function AdminTestimonials() {
+  return (
+    <AdminProtected>
+      <AdminTestimonialsInner />
+    </AdminProtected>
   );
 }
