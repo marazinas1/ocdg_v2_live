@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Suspense } from "react";
 import { lazyWithRetry as lazy } from "./lib/lazyWithRetry";
+import { useFaviconFromSettings } from "@/hooks/useSiteSettings";
 import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 
@@ -29,10 +30,12 @@ const AdminProperties = lazy(() => import("./pages/admin/AdminProperties"));
 const AdminPropertyForm = lazy(() => import("./pages/admin/AdminPropertyForm"));
 const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
 const AdminTestimonials = lazy(() => import("./pages/admin/AdminTestimonials"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSetPassword = lazy(() => import("./pages/admin/AdminSetPassword"));
 
 const queryClient = new QueryClient();
+
 
 const PageFallback = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -46,8 +49,15 @@ const SlugToCanonical = () => {
   return <Navigate to={`/developments/${slug}`} replace />;
 };
 
+/** Applies the favicon uploaded in admin settings. Must sit inside the query provider. */
+const SettingsEffects = () => {
+  useFaviconFromSettings();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <SettingsEffects />
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -92,6 +102,7 @@ const App = () => (
             <Route path="/admin/inquiries" element={<AdminInquiries />} />
             <Route path="/admin/preview" element={<PropertyPage />} />
             <Route path="/admin/testimonials" element={<AdminTestimonials />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             {/* Invited users have no role yet — this must stay unprotected. */}
             <Route path="/admin/set-password" element={<AdminSetPassword />} />

@@ -8,8 +8,8 @@ import GlobalFooter from "@/components/GlobalFooter";
 import PropertyCarousel from "@/components/PropertyCarousel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePublicProperties } from "@/hooks/usePublicProperties";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/admin/status";
-import extView2_28th from "@/assets/28th-ext-view2.jpg";
 import approachImage from "@/assets/28th-approach-v4.jpg";
 
 const testimonialSnippets = [
@@ -216,6 +216,9 @@ const TestimonialCards = () => {
 
 const Index = () => {
   const [scrollY, setScrollY] = useState(0);
+  const { settings } = useSiteSettings();
+  const hero = settings.hero;
+
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -253,8 +256,8 @@ const Index = () => {
       {/* ─── Hero ─── */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <img
-          src={extView2_28th}
-          alt="Ocean City Development Group — Premier Developments"
+          src={hero.imageUrl}
+          alt={`${settings.siteName} — Premier Developments`}
           className="absolute inset-0 w-full h-full object-cover will-change-transform"
           style={{ transform: `translateY(${scrollY * 0.3}px)` }}
           fetchPriority="high"
@@ -263,20 +266,18 @@ const Index = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto animate-fade-in-up">
-          <p className="label-uppercase text-white/70 mb-6">Ocean City Development Group</p>
-          <h1 className="heading-display text-white mb-6">
-            Building the Future<br />of Ocean City
-          </h1>
+          <p className="label-uppercase text-white/70 mb-6">{hero.eyebrow}</p>
+          <h1 className="heading-display text-white mb-6 whitespace-pre-line">{hero.headline}</h1>
           <div className="w-16 h-px bg-white/40 mx-auto mb-6" />
           <p className="text-lg md:text-xl text-white/80 font-light max-w-2xl mx-auto leading-relaxed">
-            Premier Residential Developments & Custom Homes
+            {hero.subline}
           </p>
           <button
             onClick={() => document.getElementById("developments")?.scrollIntoView({ behavior: "smooth" })}
             className="mt-10 inline-flex items-center gap-2 px-8 py-3 text-xs font-medium tracking-wider uppercase bg-white/15 backdrop-blur-sm border border-white/30 text-white hover:bg-white hover:text-charcoal transition-all duration-300 hover:-translate-y-0.5"
             style={{ borderRadius: "4px" }}
           >
-            View Developments
+            {hero.ctaLabel}
           </button>
         </div>
       </section>

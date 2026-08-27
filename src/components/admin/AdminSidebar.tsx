@@ -1,10 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Inbox, LayoutDashboard, LogOut, Quote, UserCog } from "lucide-react";
+import { ArrowLeft, Building2, Inbox, LayoutDashboard, LogOut, Quote, Settings, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminRole } from "@/hooks/admin/useAdminAuth";
 import { Badge } from "@/components/ui/badge";
 import { useUnreadInquiryCount } from "@/hooks/admin/useInquiries";
-import ocdgLogo from "@/assets/ocdg-logo.png";
+import BrandLogo from "@/components/BrandLogo";
 import {
   Sidebar,
   SidebarContent,
@@ -45,6 +45,12 @@ const ITEMS = [
     match: (p: string) => p.startsWith("/admin/testimonials"),
   },
   {
+    title: "Settings",
+    url: "/admin/settings",
+    icon: Settings,
+    match: (p: string) => p.startsWith("/admin/settings"),
+  },
+  {
     title: "Users",
     url: "/admin/users",
     icon: UserCog,
@@ -79,11 +85,7 @@ export default function AdminSidebar({
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-slate-200">
         <Link to="/admin" className="flex items-center h-12 px-2 gap-2 min-w-0">
-          <img
-            src={ocdgLogo}
-            alt="Ocean City Development Group"
-            className={collapsed ? "h-6 w-auto" : "h-8 w-auto"}
-          />
+          <BrandLogo className={collapsed ? "h-6 w-auto" : "h-8 w-auto"} />
         </Link>
       </SidebarHeader>
 

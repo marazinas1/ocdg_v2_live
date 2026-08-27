@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import ocdgLogo from "@/assets/ocdg-logo.png";
+import BrandLogo from "@/components/BrandLogo";
 
 const GlobalNav = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -63,12 +63,12 @@ const GlobalNav = () => {
         <nav className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
           <div className="flex items-center justify-between h-16 md:h-20">
             <Link to="/" onClick={handleLogoClick} className="flex items-center flex-shrink-0">
-              <img
-                src={ocdgLogo}
-                alt="Ocean City Development Group"
+              <BrandLogo
+                variant={isScrolled ? "light" : "dark"}
                 className={`h-7 sm:h-8 md:h-10 w-auto max-h-[50px] object-contain transition-all duration-300 ${
-                  !isScrolled ? "brightness-0 invert drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" : ""
-                }`} loading="lazy" decoding="async" />
+                  !isScrolled ? "drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" : ""
+                }`}
+              />
             </Link>
 
             {/* Desktop */}
