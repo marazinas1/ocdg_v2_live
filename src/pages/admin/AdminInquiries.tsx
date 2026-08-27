@@ -246,6 +246,10 @@ function InquiriesBody() {
                     <p className="text-xs text-slate-500 mt-1">
                       {[inquiry.interest, inquiry.source].filter(Boolean).join(" · ") || "—"}
                     </p>
+                    <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                      {inquiry.message ? inquiry.message : <span className="italic text-slate-400">No message</span>}
+                    </p>
+
                   </div>
                   <span className="text-xs text-slate-500 shrink-0 whitespace-nowrap">
                     {formatDate(inquiry.created_at)}
