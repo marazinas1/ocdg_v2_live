@@ -53,14 +53,12 @@ export const InviteEmail = ({
 
 export default InviteEmail
 
-const main = { backgroundColor: '#faf9f7', fontFamily: "'Inter', Helvetica, Arial, sans-serif" }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
 const container = { padding: '20px 25px' }
 const h1 = {
-  fontFamily: "'Playfair Display', Georgia, serif",
-  letterSpacing: '-0.01em',
-  fontSize: '24px',
+  fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#1c1c1c',
+  color: '#000000',
   margin: '0 0 20px',
 }
 const text = {
@@ -71,7 +69,7 @@ const text = {
 }
 const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#1c1c1c',
+  backgroundColor: '#000000',
   color: '#ffffff',
   fontSize: '14px',
   borderRadius: '8px',
