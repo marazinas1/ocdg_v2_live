@@ -940,8 +940,10 @@ function SettingsBody() {
         <Button onClick={saveAboutWithToast} disabled={save.isPending}>
           {save.isPending ? "Saving…" : "Save About page"}
         </Button>
-      </section>
+      </TabsContent>
+      </Tabs>
     </div>
+
   );
 }
 
