@@ -243,7 +243,7 @@ export function useSiteSettings() {
         .select(COLUMNS)
         .maybeSingle();
       if (error) throw error;
-      const row = (data as SiteSettingsRow | null) ?? null;
+      const row = (data as unknown as SiteSettingsRow | null) ?? null;
       return {
         row,
         siteName: row?.site_name?.trim() || SITE_NAME_FALLBACK,
