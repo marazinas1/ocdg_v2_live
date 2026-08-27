@@ -64,9 +64,13 @@ Deno.serve(async (req) => {
     const userAgent = req.headers.get("user-agent") ?? "";
     if (!userAgent || BOT_PATTERN.test(userAgent)) return noContent();
 
-    const body = (await req.json().catch(() => null)) as
-      | { path?: unknown; referrer?: unknown }
-      | null;
+    let body: { path?: unknown; referrer?: unknown } | null = null;
+    try {
+      const text = await req.text();
+      if (text) body = JSON.parse(text);
+    } catch {
+      /* malformed body -> silent no-op */
+    }
     if (!body) return noContent();
 
     const path = typeof body.path === "string" ? body.path.slice(0, 300) : "";
