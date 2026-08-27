@@ -286,8 +286,25 @@ function AdminUsersInner() {
                 return (
                   <tr key={u.id} className="border-t border-slate-100 align-middle">
                     <td className="px-4 py-3 text-slate-900">
-                      {u.email}
-                      {isSelf && <span className="text-slate-400"> (you)</span>}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate font-medium">{u.email}</span>
+                        {isSelf && (
+                          <Badge variant="outline" className="gap-1">
+                            <ShieldCheck className="h-3 w-3" /> You
+                          </Badge>
+                        )}
+                        {u.isDeveloper && (
+                          <Badge variant="outline" className="gap-1">
+                            <ShieldCheck className="h-3 w-3" /> Developer
+                          </Badge>
+                        )}
+                        {u.isLastOwner && (
+                          <Badge variant="outline" className="gap-1">
+                            <ShieldCheck className="h-3 w-3" /> Last owner
+                          </Badge>
+                        )}
+                        {!u.confirmed && <Badge variant="outline">Invited</Badge>}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <RoleBadge role={u.role} />
