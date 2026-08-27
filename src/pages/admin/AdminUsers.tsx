@@ -350,7 +350,7 @@ function AdminUsersInner() {
                             disabled={!u.role}
                             onClick={() => setPending({ kind: "revoke", user: u })}
                           >
-                            Revoke
+                            Remove access
                           </Button>
                           <Button
                             variant="ghost"
