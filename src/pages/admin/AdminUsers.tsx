@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, ShieldCheck, UserPlus } from "lucide-react";
+import { Copy, Loader2, ShieldCheck, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AdminProtected from "@/components/admin/AdminProtected";
 import { useAdminAuth } from "@/hooks/admin/useAdminAuth";
@@ -37,13 +37,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-function formatDate(value: string | null) {
-  if (!value) return "Never";
-  return new Date(value).toLocaleDateString(undefined, {
+function formatLastSignIn(value: string | null) {
+  if (!value) return "Never signed in";
+  return `Last signed in ${new Date(value).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
-  });
+  })}`;
 }
 
 function RoleBadge({ role }: { role: string | null }) {
@@ -88,6 +88,7 @@ function AdminUsersInner() {
     (InviteResult & { email: string }) | null
   >(null);
   const [pending, setPending] = useState<PendingAction>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const callerIsDeveloper =
     (users ?? []).find((u) => u.id === callerId)?.isDeveloper ?? false;
@@ -142,6 +143,7 @@ function AdminUsersInner() {
     if (!pending) return;
     const { kind, user } = pending;
     setPending(null);
+    setDeleteConfirm("");
     if (kind === "revoke") {
       revoke.mutate(
         { userId: user.id },
@@ -162,23 +164,20 @@ function AdminUsersInner() {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
+    <div className="max-w-5xl mx-auto space-y-10">
+      <header>
         <h1 className="text-2xl font-semibold text-slate-900">Users</h1>
         <p className="text-sm text-slate-500 mt-1">
           Invite teammates and manage who can access the admin.
         </p>
-      </div>
+      </header>
 
       {/* Invite */}
-      <form
-        onSubmit={submitInvite}
-        className="bg-white border border-slate-200 rounded-lg p-6 space-y-4"
-      >
+      <section className="bg-white border border-slate-200 rounded-lg p-6">
         <h2 className="text-sm font-semibold text-slate-900">Invite a user</h2>
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+        <form onSubmit={submitInvite} className="mt-4 flex flex-col gap-3 sm:flex-row">
           <div className="flex-1 space-y-1.5">
-            <Label htmlFor="invite-email">Email</Label>
+            <Label htmlFor="invite-email" className="sr-only">Email</Label>
             <Input
               id="invite-email"
               type="email"
@@ -189,12 +188,12 @@ function AdminUsersInner() {
             />
           </div>
           <div className="w-full sm:w-48 space-y-1.5">
-            <Label htmlFor="invite-role">Role</Label>
+            <Label htmlFor="invite-role" className="sr-only">Role</Label>
             <Select
               value={role}
               onValueChange={(v) => setRoleValue(v as ManageableRole)}
             >
-              <SelectTrigger id="invite-role">
+              <SelectTrigger id="invite-role" className="w-full sm:w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -207,176 +206,197 @@ function AdminUsersInner() {
             </Select>
           </div>
           <Button type="submit" disabled={invite.isPending}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            {invite.isPending ? "Inviting…" : "Send invite"}
+            {invite.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <UserPlus className="w-4 h-4 mr-2" />
+            )}
+            Send invite
           </Button>
-        </div>
-      </form>
+        </form>
 
-      {/* Manual handover fallback */}
-      {handover && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-sm font-semibold text-amber-900">
-                Hand these details to {handover.email}
-              </h2>
-              <p className="text-sm text-amber-800 mt-1">
-                No invitation email could be sent automatically. Share the link
-                {handover.password ? " (or the temporary password)" : ""} privately.
-              </p>
+        {/* Manual handover fallback */}
+        {handover && (
+          <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium text-amber-900">
+                  Hand these details to {handover.email}
+                </p>
+                <p className="text-amber-800 mt-1">
+                  No invitation email could be sent automatically. Share the link
+                  {handover.password ? " (or the temporary password)" : ""} privately.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setHandover(null)}>
+                Dismiss
+              </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setHandover(null)}>
-              Dismiss
-            </Button>
+            {handover.actionLink && (
+              <div className="flex items-center gap-2 mt-3">
+                <code className="flex-1 truncate rounded bg-white border border-amber-200 px-3 py-2 text-xs text-slate-700">
+                  {handover.actionLink}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copy("Link", handover.actionLink!)}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            {handover.password && (
+              <div className="flex items-center gap-2 mt-2">
+                <code className="flex-1 truncate rounded bg-white border border-amber-200 px-3 py-2 text-xs text-slate-700">
+                  {handover.password}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copy("Password", handover.password!)}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
-          {handover.actionLink && (
-            <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded bg-white border border-amber-200 px-3 py-2 text-xs text-slate-700">
-                {handover.actionLink}
-              </code>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => copy("Link", handover.actionLink!)}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-          {handover.password && (
-            <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded bg-white border border-amber-200 px-3 py-2 text-xs text-slate-700">
-                {handover.password}
-              </code>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => copy("Password", handover.password!)}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </section>
 
-      {/* List */}
-      {isLoading ? (
-        <div className="text-slate-500 py-16 text-center">Loading…</div>
-      ) : error ? (
-        <div className="text-center py-16 bg-white rounded-lg border border-slate-200 text-slate-600">
-          {(error as Error).message}
+      {/* Accounts */}
+      <section className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="border-b border-slate-100 px-6 py-4">
+          <h2 className="text-sm font-semibold text-slate-900">Accounts</h2>
         </div>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
-              <tr>
-                <th className="text-left font-medium px-4 py-3">Email</th>
-                <th className="text-left font-medium px-4 py-3">Role</th>
-                <th className="text-left font-medium px-4 py-3">Status</th>
-                <th className="text-left font-medium px-4 py-3">Last sign-in</th>
-                <th className="text-right font-medium px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(users ?? []).map((u) => {
-                const isSelf = u.id === callerId;
-                const readOnly = (u.isDeveloper && !callerIsDeveloper) || isSelf;
-                return (
-                  <tr key={u.id} className="border-t border-slate-100 align-middle">
-                    <td className="px-4 py-3 text-slate-900">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate font-medium">{u.email}</span>
-                        {isSelf && (
-                          <Badge variant="outline" className="gap-1">
-                            <ShieldCheck className="h-3 w-3" /> You
-                          </Badge>
-                        )}
-                        {u.isDeveloper && (
-                          <Badge variant="outline" className="gap-1">
-                            <ShieldCheck className="h-3 w-3" /> Developer
-                          </Badge>
-                        )}
-                        {u.isLastOwner && (
-                          <Badge variant="outline" className="gap-1">
-                            <ShieldCheck className="h-3 w-3" /> Last owner
-                          </Badge>
-                        )}
-                        {!u.confirmed && <Badge variant="outline">Invited</Badge>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <RoleBadge role={u.role} />
-                    </td>
-                    <td className="px-4 py-3">
-                      {u.confirmed ? (
-                        <span className="text-emerald-700">Confirmed</span>
-                      ) : (
-                        <span className="text-amber-700">Pending</span>
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+          </div>
+        )}
+
+        {error && (
+          <p className="px-6 py-8 text-sm text-red-600">{(error as Error).message}</p>
+        )}
+
+        {!isLoading && !error && (
+          <ul className="divide-y divide-slate-100">
+            {(users ?? []).map((u) => {
+              const isSelf = u.id === callerId;
+              const readOnly = (u.isDeveloper && !callerIsDeveloper) || isSelf;
+              const selfTitle = "You cannot change your own access.";
+              return (
+                <li
+                  key={u.id}
+                  className="flex flex-wrap items-center gap-3 px-6 py-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="truncate font-medium text-slate-900">
+                        {u.email}
+                      </span>
+                      {isSelf && (
+                        <Badge variant="outline" className="gap-1">
+                          <ShieldCheck className="h-3 w-3" /> You
+                        </Badge>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {formatDate(u.lastSignInAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {readOnly ? (
-                        <div className="text-right text-xs text-slate-400">
-                          {isSelf ? "Your account" : "Managed by developer"}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-2">
-                          <Select
-                            value={
-                              u.role === "owner" || u.role === "editor" ? u.role : ""
-                            }
-                            onValueChange={(v) => changeRole(u, v as ManageableRole)}
-                          >
-                            <SelectTrigger className="h-8 w-32">
-                              <SelectValue placeholder="Set role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {MANAGEABLE_ROLES.map((r) => (
-                                <SelectItem key={r} value={r}>
-                                  {ROLE_LABELS[r]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={!u.role}
-                            onClick={() => setPending({ kind: "revoke", user: u })}
-                          >
-                            Remove access
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => setPending({ kind: "delete", user: u })}
-                          >
-                            Delete
-                          </Button>
-                        </div>
+                      {u.isDeveloper && (
+                        <Badge variant="outline" className="gap-1">
+                          <ShieldCheck className="h-3 w-3" /> Developer
+                        </Badge>
                       )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {(users ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-16 text-center text-slate-500">
-                    No users yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                      {u.isLastOwner && (
+                        <Badge variant="outline" className="gap-1">
+                          <ShieldCheck className="h-3 w-3" /> Last owner
+                        </Badge>
+                      )}
+                      {!u.confirmed && <Badge variant="outline">Invited</Badge>}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {u.role ? ROLE_LABELS[u.role] ?? u.role : "No access"} ·{" "}
+                      {formatLastSignIn(u.lastSignInAt)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Select
+                      value={
+                        u.role === "owner" || u.role === "editor" ? u.role : undefined
+                      }
+                      disabled={readOnly || setRole.isPending}
+                      onValueChange={(v) => changeRole(u, v as ManageableRole)}
+                    >
+                      <SelectTrigger
+                        className="h-8 w-32"
+                        title={
+                          isSelf
+                            ? selfTitle
+                            : u.isDeveloper
+                              ? "Managed by the developer"
+                              : undefined
+                        }
+                      >
+                        <SelectValue placeholder="Set role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MANAGEABLE_ROLES.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {ROLE_LABELS[r]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!u.role || readOnly}
+                      title={
+                        isSelf
+                          ? selfTitle
+                          : u.isDeveloper
+                            ? "Managed by the developer"
+                            : u.isLastOwner
+                              ? "At least one owner account must remain"
+                              : "Remove access"
+                      }
+                      onClick={() => setPending({ kind: "revoke", user: u })}
+                    >
+                      Remove access
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={readOnly}
+                      title={
+                        isSelf
+                          ? selfTitle
+                          : u.isDeveloper
+                            ? "Managed by the developer"
+                            : undefined
+                      }
+                      onClick={() => {
+                        setDeleteConfirm("");
+                        setPending({ kind: "delete", user: u });
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+            {(users ?? []).length === 0 && (
+              <li className="px-6 py-10 text-center text-sm text-slate-500">
+                No users yet.
+              </li>
+            )}
+          </ul>
+        )}
+      </section>
 
       <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>
@@ -390,9 +410,17 @@ function AdminUsersInner() {
                 : `${pending?.user.email} will lose admin access. The account stays, so access can be granted again later.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {pending?.kind === "delete" && (
+            <Input
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder="DELETE"
+            />
+          )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteConfirm("")}>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={pending?.kind === "delete" && deleteConfirm !== "DELETE"}
               onClick={confirmPending}
               className={
                 pending?.kind === "delete"
@@ -400,7 +428,7 @@ function AdminUsersInner() {
                   : undefined
               }
             >
-              {pending?.kind === "delete" ? "Delete" : "Remove access"}
+              {pending?.kind === "delete" ? "Delete permanently" : "Remove access"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
