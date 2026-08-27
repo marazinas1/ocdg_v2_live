@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   useSiteSettings,
@@ -71,6 +72,9 @@ const BRAND_SLOTS: SlotDef[] = [
     fallbackUrl: FALLBACK_FAVICON,
     fallbackNote: "Currently using the built-in favicon.",
   },
+];
+
+const HOME_SLOTS: SlotDef[] = [
   {
     key: "hero_image_path",
     kind: "hero",
@@ -267,6 +271,9 @@ function SettingsBody() {
   const [headline, setHeadline] = useState("");
   const [subline, setSubline] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
+  const [quote, setQuote] = useState("");
+  const [quoteAttribution, setQuoteAttribution] = useState("");
+
 
   const [about, setAbout] = useState({
     heroEyebrow: "",
@@ -298,6 +305,9 @@ function SettingsBody() {
     setHeadline(row.hero_headline ?? "");
     setSubline(row.hero_subline ?? "");
     setCtaLabel(row.hero_cta_label ?? "");
+    setQuote(row.home_quote ?? "");
+    setQuoteAttribution(row.home_quote_attribution ?? "");
+
     setAbout({
       heroEyebrow: row.about_hero_eyebrow ?? "",
       heroTitle: row.about_hero_title ?? "",
@@ -368,19 +378,13 @@ function SettingsBody() {
     }
   };
 
-  const handleSaveText = async () => {
+  const saveWithToast = async (
+    patch: Parameters<typeof save.mutateAsync>[0]["patch"],
+    description: string,
+  ) => {
     try {
-      await save.mutateAsync({
-        id: rowId,
-        patch: {
-          site_name: siteName.trim() || "Ocean City Development Group",
-          hero_eyebrow: eyebrow.trim() || null,
-          hero_headline: headline.trim() || null,
-          hero_subline: subline.trim() || null,
-          hero_cta_label: ctaLabel.trim() || null,
-        },
-      });
-      toast({ title: "Saved", description: "Homepage content updated." });
+      await save.mutateAsync({ id: rowId, patch });
+      toast({ title: "Saved", description });
     } catch (err) {
       toast({
         variant: "destructive",
@@ -389,6 +393,26 @@ function SettingsBody() {
       });
     }
   };
+
+  const handleSaveBrand = () =>
+    saveWithToast(
+      { site_name: siteName.trim() || "Ocean City Development Group" },
+      "Brand settings updated.",
+    );
+
+  const handleSaveHome = () =>
+    saveWithToast(
+      {
+        hero_eyebrow: eyebrow.trim() || null,
+        hero_headline: headline.trim() || null,
+        hero_subline: subline.trim() || null,
+        hero_cta_label: ctaLabel.trim() || null,
+        home_quote: quote.trim() || null,
+        home_quote_attribution: quoteAttribution.trim() || null,
+      },
+      "Homepage content updated.",
+    );
+
 
   const handleSaveAbout = async (nextPartners: PartnerEntry[] = partners) => {
     await save.mutateAsync({
@@ -463,7 +487,7 @@ function SettingsBody() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10 pb-16">
+    <div className="mx-auto max-w-3xl space-y-8 pb-16">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -472,8 +496,18 @@ function SettingsBody() {
         </p>
       </div>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Brand</h2>
+      <Tabs defaultValue="brand" className="space-y-6">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="brand">Brand</TabsTrigger>
+          <TabsTrigger value="homepage">Homepage</TabsTrigger>
+          <TabsTrigger value="about">About page</TabsTrigger>
+        </TabsList>
+
+      <TabsContent value="brand" className="space-y-4">
+        <p className="text-xs text-slate-500">
+          Logo, favicon and site name. Uploading an image saves it right away.
+        </p>
+
 
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <Label htmlFor="site-name">Site name</Label>
@@ -502,14 +536,32 @@ function SettingsBody() {
             onRemove={() => handleRemove(slot)}
           />
         ))}
-      </section>
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <Button onClick={handleSaveBrand} disabled={save.isPending}>
+            {save.isPending ? "Saving…" : "Save brand settings"}
+          </Button>
+        </div>
+      </TabsContent>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-          Homepage hero
-        </h2>
+      <TabsContent value="homepage" className="space-y-4">
+        {HOME_SLOTS.map((slot) => (
+          <AssetSlot
+            key={slot.key}
+            label={slot.label}
+            help={slot.help}
+            url={urlFor(slot)}
+            hasUpload={!!pathFor(slot.key)}
+            dark={slot.dark}
+            note={slot.fallbackNote}
+            busy={busyKey === slot.key}
+            progress={progress}
+            onPick={(file) => handleUpload(slot, file)}
+            onRemove={() => handleRemove(slot)}
+          />
+        ))}
 
         <div className="space-y-5 rounded-lg border border-slate-200 bg-white p-5">
+
           <div>
             <Label htmlFor="hero-eyebrow">Small line above the headline</Label>
             <Input
@@ -559,20 +611,41 @@ function SettingsBody() {
             />
           </div>
 
+          <div>
+            <Label htmlFor="home-quote">Quote</Label>
+            <Textarea
+              id="home-quote"
+              value={quote}
+              onChange={(e) => setQuote(e.target.value)}
+              placeholder={HERO_FALLBACKS.quote}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="home-quote-attribution">Quote attribution</Label>
+            <Input
+              id="home-quote-attribution"
+              value={quoteAttribution}
+              onChange={(e) => setQuoteAttribution(e.target.value)}
+              placeholder={HERO_FALLBACKS.quoteAttribution}
+              className="mt-2"
+            />
+          </div>
+
           <p className="text-xs text-slate-500">
             Leave a field empty to fall back to the default wording shown in grey.
           </p>
 
-          <Button onClick={handleSaveText} disabled={save.isPending}>
-            {save.isPending ? "Saving…" : "Save changes"}
+          <Button onClick={handleSaveHome} disabled={save.isPending}>
+            {save.isPending ? "Saving…" : "Save homepage content"}
           </Button>
         </div>
-      </section>
+      </TabsContent>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-          About page
-        </h2>
+      <TabsContent value="about" className="space-y-4">
+
 
         {ABOUT_SLOTS.map((slot) => (
           <AssetSlot
@@ -867,8 +940,10 @@ function SettingsBody() {
         <Button onClick={saveAboutWithToast} disabled={save.isPending}>
           {save.isPending ? "Saving…" : "Save About page"}
         </Button>
-      </section>
+      </TabsContent>
+      </Tabs>
     </div>
+
   );
 }
 

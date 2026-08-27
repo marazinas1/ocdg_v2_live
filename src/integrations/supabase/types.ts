@@ -329,6 +329,8 @@ export type Database = {
           hero_headline: string | null
           hero_image_path: string | null
           hero_subline: string | null
+          home_quote: string | null
+          home_quote_attribution: string | null
           id: string
           logo_dark_path: string | null
           logo_path: string | null
@@ -363,6 +365,8 @@ export type Database = {
           hero_headline?: string | null
           hero_image_path?: string | null
           hero_subline?: string | null
+          home_quote?: string | null
+          home_quote_attribution?: string | null
           id?: string
           logo_dark_path?: string | null
           logo_path?: string | null
@@ -397,6 +401,8 @@ export type Database = {
           hero_headline?: string | null
           hero_image_path?: string | null
           hero_subline?: string | null
+          home_quote?: string | null
+          home_quote_attribution?: string | null
           id?: string
           logo_dark_path?: string | null
           logo_path?: string | null

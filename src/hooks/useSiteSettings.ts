@@ -20,7 +20,11 @@ export const HERO_FALLBACKS = {
   headline: "Building the Future\nof Ocean City",
   subline: "Premier Residential Developments & Custom Homes",
   ctaLabel: "View Developments",
+  quote:
+    "\"We don't just build houses; we craft coastal legacies through timeless design and uncompromising quality.\"",
+  quoteAttribution: "Patrick Halliday",
 } as const;
+
 
 export type PartnerEntry = {
   id: string;
@@ -80,8 +84,11 @@ export type SiteSettingsRow = {
   hero_headline: string | null;
   hero_subline: string | null;
   hero_cta_label: string | null;
+  home_quote: string | null;
+  home_quote_attribution: string | null;
   about_hero_image_path: string | null;
   about_story_image_path: string | null;
+
   about_portrait_image_path: string | null;
   about_hero_eyebrow: string | null;
   about_hero_title: string | null;
@@ -103,6 +110,7 @@ export type SiteSettingsRow = {
 
 const COLUMNS =
   "id, site_name, logo_path, logo_dark_path, favicon_path, hero_image_path, hero_eyebrow, hero_headline, hero_subline, hero_cta_label, " +
+  "home_quote, home_quote_attribution, " +
   "about_hero_image_path, about_story_image_path, about_portrait_image_path, about_hero_eyebrow, about_hero_title, " +
   "about_story_label, about_story_heading, about_story_paragraph_1, about_story_paragraph_2, about_story_quote, " +
   "about_story_quote_attribution, about_leader_name, about_leader_role, about_promise_label, about_promise_heading, " +
@@ -117,6 +125,8 @@ export type HeroContent = {
   headline: string;
   subline: string;
   ctaLabel: string;
+  quote: string;
+  quoteAttribution: string;
 };
 
 export function resolveHero(row: Partial<SiteSettingsRow> | null): HeroContent {
@@ -126,8 +136,11 @@ export function resolveHero(row: Partial<SiteSettingsRow> | null): HeroContent {
     headline: trimmed(row?.hero_headline, HERO_FALLBACKS.headline),
     subline: trimmed(row?.hero_subline, HERO_FALLBACKS.subline),
     ctaLabel: trimmed(row?.hero_cta_label, HERO_FALLBACKS.ctaLabel),
+    quote: trimmed(row?.home_quote, HERO_FALLBACKS.quote),
+    quoteAttribution: trimmed(row?.home_quote_attribution, HERO_FALLBACKS.quoteAttribution),
   };
 }
+
 
 export type AboutPartner = {
   id: string;
