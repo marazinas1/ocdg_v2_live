@@ -125,6 +125,8 @@ export type HeroContent = {
   headline: string;
   subline: string;
   ctaLabel: string;
+  quote: string;
+  quoteAttribution: string;
 };
 
 export function resolveHero(row: Partial<SiteSettingsRow> | null): HeroContent {
@@ -134,8 +136,11 @@ export function resolveHero(row: Partial<SiteSettingsRow> | null): HeroContent {
     headline: trimmed(row?.hero_headline, HERO_FALLBACKS.headline),
     subline: trimmed(row?.hero_subline, HERO_FALLBACKS.subline),
     ctaLabel: trimmed(row?.hero_cta_label, HERO_FALLBACKS.ctaLabel),
+    quote: trimmed(row?.home_quote, HERO_FALLBACKS.quote),
+    quoteAttribution: trimmed(row?.home_quote_attribution, HERO_FALLBACKS.quoteAttribution),
   };
 }
+
 
 export type AboutPartner = {
   id: string;
