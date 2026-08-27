@@ -12,6 +12,8 @@ import subpageHero from "@/assets/subpage-hero.jpg";
 const Testimonials = () => {
   const [scrollY, setScrollY] = useState(0);
   const location = useLocation();
+  const { data: testimonials = [], isLoading } = useTestimonials();
+
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
