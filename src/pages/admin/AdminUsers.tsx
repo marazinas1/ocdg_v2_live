@@ -146,7 +146,7 @@ function AdminUsersInner() {
       revoke.mutate(
         { userId: user.id },
         {
-          onSuccess: () => toast.success(`Access revoked for ${user.email}.`),
+          onSuccess: () => toast.success(`Access removed for ${user.email}.`),
           onError: (err: Error) => toast.error(err.message),
         },
       );
