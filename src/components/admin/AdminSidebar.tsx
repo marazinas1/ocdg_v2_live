@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AdminRole } from "@/hooks/admin/useAdminAuth";
 import { Badge } from "@/components/ui/badge";
 import { useUnreadInquiryCount } from "@/hooks/admin/useInquiries";
-import ocdgLogo from "@/assets/ocdg-logo.png";
+import BrandLogo from "@/components/BrandLogo";
 import {
   Sidebar,
   SidebarContent,
@@ -79,11 +79,7 @@ export default function AdminSidebar({
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-slate-200">
         <Link to="/admin" className="flex items-center h-12 px-2 gap-2 min-w-0">
-          <img
-            src={ocdgLogo}
-            alt="Ocean City Development Group"
-            className={collapsed ? "h-6 w-auto" : "h-8 w-auto"}
-          />
+          <BrandLogo className={collapsed ? "h-6 w-auto" : "h-8 w-auto"} />
         </Link>
       </SidebarHeader>
 

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import ocdgLogo from "@/assets/ocdg-logo.png";
+import BrandLogo from "@/components/BrandLogo";
 
 const SocialIcons = () => (
   <div className="flex items-center gap-4">
@@ -18,7 +18,7 @@ const GlobalFooter = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           <div>
-            <img src={ocdgLogo} alt="OCDG" className="h-8 w-auto mb-4 brightness-0 invert" loading="lazy" decoding="async" />
+            <BrandLogo variant="dark" className="h-8 w-auto mb-4" />
             <p className="text-sm text-white/60 leading-relaxed mb-4">
               Premier residential developments and custom homes in Ocean City, New Jersey.
             </p>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import ocdgLogo from "@/assets/ocdg-logo.png";
+import BrandLogo from "@/components/BrandLogo";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -87,7 +87,7 @@ const AdminLogin = () => {
         <div className="w-full max-w-md">
           {/* The branded panel is hidden on small screens, so show the mark here. */}
           <div className="md:hidden mb-10">
-            <img src={ocdgLogo} alt="Ocean City Development Group" className="h-10 w-auto" />
+            <BrandLogo className="h-10 w-auto" />
           </div>
 
           <div className="mb-10">
@@ -170,12 +170,7 @@ const AdminLogin = () => {
 
       {/* Right — branded panel */}
       <aside className="hidden md:flex flex-col items-center justify-center bg-charcoal px-16 py-24">
-        <img
-          src={ocdgLogo}
-          alt="Ocean City Development Group"
-          className="h-16 w-auto"
-          style={{ filter: "brightness(0) invert(1)" }}
-        />
+        <BrandLogo variant="dark" className="h-16 w-auto" />
         <div className="mt-10 h-px w-12 bg-white/20" />
       </aside>
     </main>
