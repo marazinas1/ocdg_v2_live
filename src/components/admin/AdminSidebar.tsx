@@ -51,6 +51,13 @@ const ITEMS = [
     match: (p: string) => p.startsWith("/admin/users"),
   },
   {
+    title: "Analytics",
+    url: "/admin/analytics",
+    icon: BarChart3,
+    match: (p: string) => p.startsWith("/admin/analytics"),
+  },
+  {
+
     title: "Settings",
     url: "/admin/settings",
     icon: Settings,
