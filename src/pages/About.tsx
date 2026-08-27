@@ -1,18 +1,14 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+
 import GlobalNav from "@/components/GlobalNav";
 import SEO from "@/components/SEO";
 import GlobalFooter from "@/components/GlobalFooter";
-import subpageHero from "@/assets/subpage-hero.jpg";
-import hallidayLogo from "@/assets/halliday-logo.png";
-import ocdgLogo from "@/assets/ocdg-logo.png";
-import hallidayLeonardLogo from "@/assets/partner-halliday-leonard.jpg";
-import approachImage from "@/assets/28th-approach-v4.jpg";
-
-import patrickPhoto from "@/assets/patrick-halliday.png";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const About = () => {
   const [scrollY, setScrollY] = useState(0);
+  const { settings } = useSiteSettings();
+  const about = settings.about;
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -27,14 +23,14 @@ const About = () => {
       {/* Hero */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <img
-          src={subpageHero}
-          alt="About Ocean City Development Group"
+          src={about.heroImageUrl}
+          alt={about.heroTitle}
           className="absolute inset-0 w-full h-full object-cover will-change-transform"
           style={{ transform: `translateY(${scrollY * 0.25}px)` }} loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
         <div className="relative z-10 text-center px-4 animate-fade-in-up">
-          <p className="label-uppercase text-white/70 mb-4">Who We Are</p>
-          <h1 className="heading-display text-white">About Ocean City Development Group</h1>
+          <p className="label-uppercase text-white/70 mb-4">{about.heroEyebrow}</p>
+          <h1 className="heading-display text-white">{about.heroTitle}</h1>
         </div>
       </section>
 
@@ -44,31 +40,31 @@ const About = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Text */}
             <div>
-              <p className="label-uppercase mb-4">Our Story</p>
-              <h2 className="heading-section text-charcoal mb-6">Defining Coastal Luxury</h2>
+              <p className="label-uppercase mb-4">{about.storyLabel}</p>
+              <h2 className="heading-section text-charcoal mb-6">{about.storyHeading}</h2>
               <div className="divider mb-8" />
-              <p className="text-body text-lg leading-relaxed mb-6">
-                Ocean City Development Group takes great pride in providing our customers with an unmatched level of customer service. As a full-service development company, we strive to build long-lasting relationships with our clients and fulfill all their new construction needs.
+              <p className="text-body text-lg leading-relaxed mb-6 whitespace-pre-line">
+                {about.storyParagraph1}
               </p>
-              <p className="text-body text-lg leading-relaxed mb-8">
-                With over 45 years of real estate development experience, the partners of Ocean City Development Group take pride in our work and look forward to creating the new home you've always dreamed of.
+              <p className="text-body text-lg leading-relaxed mb-8 whitespace-pre-line">
+                {about.storyParagraph2}
               </p>
               {/* Signature-style element */}
               <div className="border-l-2 border-charcoal/20 pl-6 mt-8">
                 <p className="font-serif italic text-charcoal/70 text-lg mb-2">
-                  "Building dreams, one home at a time."
+                  {about.storyQuote}
                 </p>
                 <div className="w-24 h-px bg-charcoal/30 mb-2" />
                 <p className="text-xs uppercase tracking-widest text-muted-slate">
-                  The Halliday-Leonard Family
+                  {about.storyQuoteAttribution}
                 </p>
               </div>
             </div>
             {/* Image */}
             <div className="relative overflow-hidden" style={{ borderRadius: "4px" }}>
               <img
-                src={approachImage}
-                alt="Ocean City Development Group — Craftsmanship"
+                src={about.storyImageUrl}
+                alt={`${settings.siteName} — Craftsmanship`}
                 className="w-full object-cover object-center aspect-[3/4] lg:max-h-[550px] lg:aspect-auto lg:h-[60vh] lg:min-h-[400px]" loading="lazy" decoding="async" />
             </div>
           </div>
@@ -83,20 +79,20 @@ const About = () => {
             <div className="flex flex-col items-center">
               <div className="w-60 mx-auto">
                 <img
-                  src={patrickPhoto}
-                  alt="Patrick Halliday — Managing Partner"
+                  src={about.portraitImageUrl}
+                  alt={`${about.leaderName} — ${about.leaderRole}`}
                   className="w-full h-auto" loading="lazy" decoding="async" />
               </div>
-              <p className="mt-5 text-sm tracking-wide text-charcoal font-medium">Patrick Halliday</p>
-              <p className="text-xs uppercase tracking-widest text-muted-slate">Managing Partner</p>
+              <p className="mt-5 text-sm tracking-wide text-charcoal font-medium">{about.leaderName}</p>
+              <p className="text-xs uppercase tracking-widest text-muted-slate">{about.leaderRole}</p>
             </div>
             {/* Text */}
             <div>
-              <p className="label-uppercase mb-4">Our Promise</p>
-              <h2 className="heading-section text-charcoal mb-6">Timeless Design. Superior Craftsmanship.</h2>
+              <p className="label-uppercase mb-4">{about.promiseLabel}</p>
+              <h2 className="heading-section text-charcoal mb-6">{about.promiseHeading}</h2>
               <div className="divider mb-8" />
-              <p className="text-body text-lg leading-relaxed">
-                Our attention to detail allows you to sit back, relax, and step into the reality you've always dreamed of. We have been involved in thousands of custom homes and developments throughout Ocean City, NJ.
+              <p className="text-body text-lg leading-relaxed whitespace-pre-line">
+                {about.promiseParagraph}
               </p>
             </div>
           </div>
@@ -109,42 +105,48 @@ const About = () => {
       {/* Our Partners */}
       <section className="section-padding">
         <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-5xl text-center">
-          <p className="label-uppercase mb-4">Our Partners</p>
-          <h2 className="heading-section text-charcoal mb-6">Trusted Collaborators</h2>
+          <p className="label-uppercase mb-4">{about.partnersLabel}</p>
+          <h2 className="heading-section text-charcoal mb-6">{about.partnersHeading}</h2>
           <div className="divider mx-auto mb-12" />
 
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 text-left">
-            {/* Halliday Architects */}
-            <a
-              href="https://www.hallidayarchitects.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center text-center group cursor-pointer"
-            >
-              <div className="h-20 flex items-center justify-center mb-6">
-                <img src={hallidayLogo} alt="Halliday Architects" className="max-h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105" loading="lazy" decoding="async" />
-              </div>
-              <h3 className="font-serif text-2xl text-charcoal mb-4 group-hover:underline decoration-1 underline-offset-4">Halliday Architects</h3>
-              <p className="text-body leading-relaxed">
-                Every Ocean City Development Group project is brought to life in collaboration with Halliday Architects, whose award-winning designs blend coastal elegance with modern functionality.
-              </p>
-            </a>
+            {about.partners.map((partner) => {
+              const card = (
+                <>
+                  {partner.logoUrl && (
+                    <div className="h-20 flex items-center justify-center mb-6">
+                      <img
+                        src={partner.logoUrl}
+                        alt={partner.name}
+                        className="max-h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  )}
+                  <h3 className="font-serif text-2xl text-charcoal mb-4 group-hover:underline decoration-1 underline-offset-4">
+                    {partner.name}
+                  </h3>
+                  <p className="text-body leading-relaxed whitespace-pre-line">{partner.description}</p>
+                </>
+              );
 
-            {/* Halliday-Leonard General Contractors */}
-            <a
-              href="https://www.hallidayleonardllc.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center text-center group cursor-pointer"
-            >
-              <div className="h-20 flex items-center justify-center mb-6">
-                <img src={hallidayLeonardLogo} alt="Halliday-Leonard Custom Home Builders" className="max-h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105" loading="lazy" decoding="async" />
-              </div>
-              <h3 className="font-serif text-2xl text-charcoal mb-4 group-hover:underline decoration-1 underline-offset-4">Halliday-Leonard Custom Home Builders</h3>
-              <p className="text-body leading-relaxed">
-                Our trusted construction partner, Halliday-Leonard delivers master-level craftsmanship on every residence — combining decades of building expertise with an unwavering commitment to quality.
-              </p>
-            </a>
+              return partner.url ? (
+                <a
+                  key={partner.id}
+                  href={partner.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center text-center group cursor-pointer"
+                >
+                  {card}
+                </a>
+              ) : (
+                <div key={partner.id} className="flex flex-col items-center text-center group">
+                  {card}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

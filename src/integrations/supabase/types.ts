@@ -303,6 +303,25 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          about_hero_eyebrow: string | null
+          about_hero_image_path: string | null
+          about_hero_title: string | null
+          about_leader_name: string | null
+          about_leader_role: string | null
+          about_partners: Json
+          about_partners_heading: string | null
+          about_partners_label: string | null
+          about_portrait_image_path: string | null
+          about_promise_heading: string | null
+          about_promise_label: string | null
+          about_promise_paragraph: string | null
+          about_story_heading: string | null
+          about_story_image_path: string | null
+          about_story_label: string | null
+          about_story_paragraph_1: string | null
+          about_story_paragraph_2: string | null
+          about_story_quote: string | null
+          about_story_quote_attribution: string | null
           created_at: string
           favicon_path: string | null
           hero_cta_label: string | null
@@ -318,6 +337,25 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          about_hero_eyebrow?: string | null
+          about_hero_image_path?: string | null
+          about_hero_title?: string | null
+          about_leader_name?: string | null
+          about_leader_role?: string | null
+          about_partners?: Json
+          about_partners_heading?: string | null
+          about_partners_label?: string | null
+          about_portrait_image_path?: string | null
+          about_promise_heading?: string | null
+          about_promise_label?: string | null
+          about_promise_paragraph?: string | null
+          about_story_heading?: string | null
+          about_story_image_path?: string | null
+          about_story_label?: string | null
+          about_story_paragraph_1?: string | null
+          about_story_paragraph_2?: string | null
+          about_story_quote?: string | null
+          about_story_quote_attribution?: string | null
           created_at?: string
           favicon_path?: string | null
           hero_cta_label?: string | null
@@ -333,6 +371,25 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          about_hero_eyebrow?: string | null
+          about_hero_image_path?: string | null
+          about_hero_title?: string | null
+          about_leader_name?: string | null
+          about_leader_role?: string | null
+          about_partners?: Json
+          about_partners_heading?: string | null
+          about_partners_label?: string | null
+          about_portrait_image_path?: string | null
+          about_promise_heading?: string | null
+          about_promise_label?: string | null
+          about_promise_paragraph?: string | null
+          about_story_heading?: string | null
+          about_story_image_path?: string | null
+          about_story_label?: string | null
+          about_story_paragraph_1?: string | null
+          about_story_paragraph_2?: string | null
+          about_story_quote?: string | null
+          about_story_quote_attribution?: string | null
           created_at?: string
           favicon_path?: string | null
           hero_cta_label?: string | null
