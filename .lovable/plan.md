@@ -30,7 +30,7 @@ One new file: `supabase/functions/manage-users/index.ts`, ported line-for-line f
 - Caller must hold `developer` or `owner`, read from the database with the service client — a role sent by the client is never trusted; otherwise 403
 - Self-lock: `body.userId === callerId` → 403
 - `shielded()`: a non-developer cannot modify a developer account → 403
-- `wouldRemoveLastOwner()`: any change that would leave zero owners → 409
+- `wouldRemoveLastOwner()`: any change that would leave zero owners → 409; applied to `set_role`, `revoke`, and `delete_user`
 - Two clients: `asCaller` (anon key + user JWT) for identity, `admin` (service role) for all writes
 - Zod validation on the whole body via a discriminated union; 400 on failure
 - CORS headers on every response, including errors
