@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { sendTemplateEmail } from '../_shared/transactional-email-templates/send-email.ts'
+import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
 const TEMPLATE_NAME = 'inquiry-notification'
 
@@ -83,27 +84,27 @@ Deno.serve(async (req) => {
 
   // The notification always goes to the fixed address defined on the template.
   const templateData = { name, email, phone, interest, message, source }
+  const notificationRecipient = TEMPLATES[TEMPLATE_NAME]?.to ?? email
 
   try {
     const result = await sendTemplateEmail(TEMPLATE_NAME, email, {
       templateData,
       idempotencyKey: `${TEMPLATE_NAME}-${leadId || crypto.randomUUID()}`,
-      replyTo: email,
     })
 
     if (!result.sent) {
-      await logSend(supabase, email, 'suppressed')
+      await logSend(supabase, notificationRecipient, 'suppressed')
       console.log('Inquiry notification suppressed', { source })
       return jsonResponse({ success: false, reason: 'recipient_suppressed' })
     }
 
-    await logSend(supabase, email, 'sent')
+    await logSend(supabase, notificationRecipient, 'sent')
     console.log('Inquiry notification sent', { source })
     return jsonResponse({ success: true })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('Inquiry notification failed', { message: errorMessage })
-    await logSend(supabase, email, 'failed', errorMessage)
+    await logSend(supabase, notificationRecipient, 'failed', errorMessage)
     return jsonResponse({ error: 'Failed to send notification' }, 500)
   }
 })
