@@ -56,6 +56,16 @@
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.05), 0 2px 4px -2px hsl(0 0% 0% / 0.05);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.08), 0 4px 6px -4px hsl(0 0% 0% / 0.05);
     --shadow-elegant: 0 25px 50px -12px hsl(0 0% 0% / 0.15);
+
+    /* Admin sidebar tokens (site palette, not shadcn defaults) */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 0 0% 10%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 45 20% 96%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 220 10% 90%;
+    --sidebar-ring: 0 0% 10%;
   }
 
   .dark {
@@ -83,6 +93,15 @@
     --ring: 0 0% 80%;
     --glass-bg: 0 0% 10% / 0.85;
     --glass-border: 0 0% 100% / 0.1;
+
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 0% 95%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 80%;
   }
 }
 
