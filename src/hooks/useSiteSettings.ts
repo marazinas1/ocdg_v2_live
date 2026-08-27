@@ -20,7 +20,11 @@ export const HERO_FALLBACKS = {
   headline: "Building the Future\nof Ocean City",
   subline: "Premier Residential Developments & Custom Homes",
   ctaLabel: "View Developments",
+  quote:
+    "\"We don't just build houses; we craft coastal legacies through timeless design and uncompromising quality.\"",
+  quoteAttribution: "Patrick Halliday",
 } as const;
+
 
 export type PartnerEntry = {
   id: string;
