@@ -382,7 +382,7 @@ function AdminUsersInner() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pending?.kind === "delete" ? "Delete this account?" : "Revoke access?"}
+              {pending?.kind === "delete" ? "Delete this account?" : "Remove access?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pending?.kind === "delete"
