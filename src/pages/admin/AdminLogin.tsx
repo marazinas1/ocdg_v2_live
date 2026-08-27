@@ -20,7 +20,7 @@ const AdminLogin = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
-        .eq("role", "admin")
+        .in("role", ["developer", "owner"])
         .maybeSingle();
       if (active && roles) navigate("/admin", { replace: true });
     })();
@@ -50,7 +50,7 @@ const AdminLogin = () => {
       .from("user_roles")
       .select("role")
       .eq("user_id", data.session.user.id)
-      .eq("role", "admin")
+      .in("role", ["developer", "owner"])
       .maybeSingle();
 
     if (roleError || !roleRow) {
