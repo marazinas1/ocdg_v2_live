@@ -10,13 +10,13 @@ export function useSaveSiteSettings() {
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string | null; patch: SiteSettingsPatch }) => {
       if (id) {
-        const { error } = await supabase.from("site_settings").update(patch).eq("id", id);
+        const { error } = await supabase.from("site_settings").update(patch as never).eq("id", id);
         if (error) throw error;
         return;
       }
       const { error } = await supabase
         .from("site_settings")
-        .insert({ ...patch, singleton: true });
+        .insert({ ...patch, singleton: true } as never);
       if (error) throw error;
     },
     onSuccess: () => {
