@@ -110,6 +110,7 @@ export type SiteSettingsRow = {
 
 const COLUMNS =
   "id, site_name, logo_path, logo_dark_path, favicon_path, hero_image_path, hero_eyebrow, hero_headline, hero_subline, hero_cta_label, " +
+  "home_quote, home_quote_attribution, " +
   "about_hero_image_path, about_story_image_path, about_portrait_image_path, about_hero_eyebrow, about_hero_title, " +
   "about_story_label, about_story_heading, about_story_paragraph_1, about_story_paragraph_2, about_story_quote, " +
   "about_story_quote_attribution, about_leader_name, about_leader_role, about_promise_label, about_promise_heading, " +
