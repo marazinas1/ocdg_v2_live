@@ -86,6 +86,9 @@ const App = () => (
             <Route path="/admin/properties/new" element={<AdminPropertyForm />} />
             <Route path="/admin/properties/:id/edit" element={<AdminPropertyForm />} />
             <Route path="/admin/preview" element={<PropertyPage />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            {/* Invited users have no role yet — this must stay unprotected. */}
+            <Route path="/admin/set-password" element={<AdminSetPassword />} />
             <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

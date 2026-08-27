@@ -22,9 +22,19 @@ export default function AdminShell({
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/admin" className="font-semibold text-slate-900 tracking-tight">
-            OCDG Admin
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link to="/admin" className="font-semibold text-slate-900 tracking-tight">
+              OCDG Admin
+            </Link>
+            <nav className="flex items-center gap-4 text-sm">
+              <Link to="/admin" className="text-slate-600 hover:text-slate-900">
+                Properties
+              </Link>
+              <Link to="/admin/users" className="text-slate-600 hover:text-slate-900">
+                Users
+              </Link>
+            </nav>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-slate-600 hidden sm:inline">{email}</span>
             <Button variant="outline" size="sm" onClick={signOut}>
