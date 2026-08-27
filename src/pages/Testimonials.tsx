@@ -89,6 +89,11 @@ const Testimonials = () => {
       {/* Testimonials Carousel */}
       <section className="section-padding overflow-hidden">
         <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl">
+          {testimonials.length === 0 ? (
+            <p className="text-center text-body">
+              {isLoading ? "Loading testimonials…" : "Testimonials are coming soon."}
+            </p>
+          ) : (
           <div className="relative">
             {/* Navigation arrows */}
             <button
@@ -153,6 +158,7 @@ const Testimonials = () => {
               ))}
             </div>
           </div>
+          )}
         </div>
       </section>
 
