@@ -15,5 +15,9 @@ export default function AdminProtected({ children }: { children: ReactNode }) {
   if (auth.status === "loading") return <Spinner />;
   if (auth.status === "unauthorized") return <Navigate to="/admin/login" replace />;
 
-  return <AdminShell email={auth.email}>{children}</AdminShell>;
+  return (
+    <AdminShell email={auth.email} role={auth.role}>
+      {children}
+    </AdminShell>
+  );
 }

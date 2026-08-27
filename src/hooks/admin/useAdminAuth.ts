@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export type AdminRole = "developer" | "owner";
+
 export type AdminAuthState =
   | { status: "loading" }
   | { status: "unauthorized" }
-  | { status: "admin"; userId: string; email: string };
+  | { status: "admin"; userId: string; email: string; role: AdminRole };
 
 export function useAdminAuth(): AdminAuthState {
   const [state, setState] = useState<AdminAuthState>({ status: "loading" });
@@ -43,18 +45,20 @@ export function useAdminAuth(): AdminAuthState {
         setState({ status: "unauthorized" });
         return;
       }
-      const next: AdminAuthState = {
+      const next = {
         status: "admin",
         userId: userData.user.id,
         email: userData.user.email ?? "",
-      };
+        role: roleRow.role as AdminRole,
+      } as const satisfies AdminAuthState;
       // Avoid needless re-renders on background re-verify.
       const prev = stateRef.current;
       if (
         background &&
         prev.status === "admin" &&
         prev.userId === next.userId &&
-        prev.email === next.email
+        prev.email === next.email &&
+        prev.role === next.role
       ) {
         return;
       }
