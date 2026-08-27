@@ -487,7 +487,7 @@ function SettingsBody() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10 pb-16">
+    <div className="mx-auto max-w-3xl space-y-8 pb-16">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -496,8 +496,18 @@ function SettingsBody() {
         </p>
       </div>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Brand</h2>
+      <Tabs defaultValue="brand" className="space-y-6">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="brand">Brand</TabsTrigger>
+          <TabsTrigger value="homepage">Homepage</TabsTrigger>
+          <TabsTrigger value="about">About page</TabsTrigger>
+        </TabsList>
+
+      <TabsContent value="brand" className="space-y-4">
+        <p className="text-xs text-slate-500">
+          Logo, favicon and site name. Uploading an image saves it right away.
+        </p>
+
 
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <Label htmlFor="site-name">Site name</Label>
