@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Suspense } from "react";
 import { lazyWithRetry as lazy } from "./lib/lazyWithRetry";
+import { useFaviconFromSettings } from "@/hooks/useSiteSettings";
 import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 
@@ -35,6 +36,7 @@ const AdminSetPassword = lazy(() => import("./pages/admin/AdminSetPassword"));
 
 const queryClient = new QueryClient();
 
+
 const PageFallback = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
     <div className="w-8 h-8 border-2 border-charcoal/20 border-t-charcoal rounded-full animate-spin" />
@@ -47,8 +49,15 @@ const SlugToCanonical = () => {
   return <Navigate to={`/developments/${slug}`} replace />;
 };
 
+/** Applies the favicon uploaded in admin settings. Must sit inside the query provider. */
+const SettingsEffects = () => {
+  useFaviconFromSettings();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <SettingsEffects />
     <TooltipProvider>
       <Toaster />
       <Sonner />
