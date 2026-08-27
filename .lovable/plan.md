@@ -1,26 +1,43 @@
-## What I found
+# Plan: Role hierarchy foundation (developer / owner / editor)
 
-The Lovable dashboard card shows a broken-image icon, not a blank one — meaning an image URL is being requested and failing to load, rather than no screenshot existing.
+First step of the admin role-hierarchy upgrade. Database foundation + frontend role-check updates only. No publish.
 
-Verified facts:
-- The project is published and public; the live site returns 200.
-- `robots.txt` allows all bots; the `noindex` script only fires on non-production hosts.
-- `index.html` hardcodes `og:image` and `twitter:image` as `https://www.oceancitydevelopment.com/og-image.jpg`.
-- That exact URL returns **302 → `https://oceancitydevelopment.com/og-image.jpg`** (the `www` host redirects to the apex). The apex URL returns a valid `image/jpeg`.
+## Step 1 — Migration 1: enum values
 
-Lovable hosting normally injects the project's own screenshot as the social preview, but this project overrides it with a hardcoded URL that redirects across hosts. That redirected URL is the most likely reason the card image fails while every other project (which has no hardcoded override) shows fine. The same applies to `og:url`.
+```sql
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'developer';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'owner';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'editor';
+```
 
-## Plan
+## Step 2 — Migration 2: functions + role migration
 
-1. In `index.html`, change the hardcoded social URLs from the redirecting `www` host to the canonical apex host that serves a direct 200:
-   - `og:url` → `https://oceancitydevelopment.com`
-   - `og:image` → `https://oceancitydevelopment.com/og-image.jpg`
-   - `twitter:image` → `https://oceancitydevelopment.com/og-image.jpg`
-2. Also update the `Sitemap:` line in `public/robots.txt` to the apex host so it matches the canonical domain and stops relying on a redirect.
-3. Verify after publish: fetch the published HTML, confirm the meta tags carry the apex URLs, and confirm each image URL answers `200 image/jpeg` with no redirect hop.
-4. You press Publish (I have no publish tool in this project). If the card is still broken afterwards, fallback: remove the hardcoded `og:image` / `twitter:image` tags entirely so Lovable hosting injects its own auto-generated screenshot, exactly like the other projects in your dashboard.
+Runs after Migration 1 is committed (Postgres enum-commit requirement).
 
-## Technical notes
+1. Rewrite `is_admin(_user_id uuid DEFAULT auth.uid())` — SECURITY DEFINER, STABLE, sql, `SET search_path = public`; new body checks `role IN ('developer','owner')`. Re-apply existing REVOKE/GRANT (revoke from PUBLIC/anon, grant authenticated + service_role).
+2. New helpers, all SECURITY DEFINER STABLE sql, `SET search_path = public`, EXECUTE granted to `authenticated` + `service_role`, revoked from PUBLIC/anon:
+   - `is_developer(_user_id uuid DEFAULT auth.uid())` → `role = 'developer'`
+   - `is_owner(_user_id uuid DEFAULT auth.uid())` → `role IN ('developer','owner')`
+   - `is_staff(_user_id uuid DEFAULT auth.uid())` → `role IN ('developer','owner','editor')`
+   - `has_role(_user_id uuid, _role app_role)` → exact-role EXISTS check
+3. Migrate existing account:
+   `UPDATE public.user_roles SET role = 'developer' WHERE role = 'admin';`
 
-- Frontend-only edit to `index.html` plus one line in `public/robots.txt`. No database, no component, no route changes.
-- Removing the override (step 4 fallback) means social previews use Lovable's auto screenshot rather than your branded `og-image.jpg`; that is why it is a fallback, not the first move.
+The 13 existing RLS policies, leads policies, email system, and properties/property_images logic are untouched — they call `is_admin()`, so the rewrite covers them.
+
+## Step 3 — Frontend role checks (accept hierarchy)
+
+- `src/hooks/admin/useAdminAuth.ts`: replace `.eq("role", "admin")` with `.in("role", ["developer", "owner"])`.
+- `src/pages/admin/AdminLogin.tsx`: same change in both role-check spots (initial session check and post-sign-in check).
+
+## Step 4 — Types + verification
+
+- Regenerate `src/integrations/supabase/types.ts` (supabase--get_types) so the new enum values are typed.
+- Verify:
+  - (a) enum contains developer/owner/editor alongside existing values
+  - (b) `is_admin()` returns true for developer and owner
+  - (c) your account row is now `developer` and passes `is_admin()`
+  - (d) all 13 RLS policies unchanged (spot-check policy definitions)
+  - (e) the 3 frontend checks use the hierarchy
+  - (f) typecheck passes
+- No publish. Live site untouched until the full sequence is verified.
