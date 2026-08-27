@@ -2,7 +2,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 const BUCKET = "brand-assets";
 
-export type BrandAssetKind = "logo" | "logo_dark" | "favicon" | "hero";
+export type BrandAssetKind =
+  | "logo"
+  | "logo_dark"
+  | "favicon"
+  | "hero"
+  | "about_hero"
+  | "about_story"
+  | "about_portrait"
+  | "partner_logo";
 
 type Preset = { maxEdge: number; type: "image/png" | "image/jpeg"; quality?: number };
 
@@ -11,6 +19,10 @@ const PRESETS: Record<BrandAssetKind, Preset> = {
   logo_dark: { maxEdge: 800, type: "image/png" },
   favicon: { maxEdge: 256, type: "image/png" },
   hero: { maxEdge: 2400, type: "image/jpeg", quality: 0.82 },
+  about_hero: { maxEdge: 2400, type: "image/jpeg", quality: 0.82 },
+  about_story: { maxEdge: 1800, type: "image/jpeg", quality: 0.82 },
+  about_portrait: { maxEdge: 900, type: "image/png" },
+  partner_logo: { maxEdge: 800, type: "image/png" },
 };
 
 export class NotAnImageError extends Error {
