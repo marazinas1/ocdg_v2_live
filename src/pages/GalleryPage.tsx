@@ -200,6 +200,18 @@ const GalleryPage = () => {
   const prevImage = () =>
     setCurrentIndex((prev) => (allImages.length ? (prev - 1 + allImages.length) % allImages.length : 0));
 
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "ArrowRight") nextImage();
+      else if (e.key === "ArrowLeft") prevImage();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen, allImages.length]);
+
   const loadMore = () => {
     setVisibleProjectCount((prev) => Math.min(prev + PROJECTS_PER_BATCH, layoutBlocks.length));
   };
