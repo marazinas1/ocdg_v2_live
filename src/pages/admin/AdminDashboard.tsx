@@ -90,6 +90,24 @@ function AdminDashboardInner() {
       </section>
 
       <section>
+        <h2 className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Traffic</h2>
+        <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
+          <Stat
+            value={Number(traffic?.totals?.views ?? 0)}
+            label="Views this week"
+            to="/admin/analytics"
+          />
+          <Stat
+            value={Number(traffic?.totals?.visitors ?? 0)}
+            label="Visitors this week"
+            to="/admin/analytics"
+          />
+        </div>
+      </section>
+
+
+
+      <section>
         <h2 className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Recent activity</h2>
         <div className="mt-4 rounded-lg border border-slate-200 bg-card px-6">
           {activity.length === 0 ? (
