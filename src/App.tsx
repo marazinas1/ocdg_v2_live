@@ -104,7 +104,9 @@ const App = () => (
             <Route path="/admin/testimonials" element={<AdminTestimonials />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
             {/* Invited users have no role yet — this must stay unprotected. */}
+
             <Route path="/admin/set-password" element={<AdminSetPassword />} />
             <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
