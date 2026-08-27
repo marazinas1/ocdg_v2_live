@@ -4,6 +4,7 @@ import AdminProtected from "@/components/admin/AdminProtected";
 import { Button } from "@/components/ui/button";
 import { useUnreadInquiryCount } from "@/hooks/admin/useInquiries";
 import { relativeTime, useContentCounts, useRecentActivity } from "@/hooks/admin/useDashboard";
+import { useAnalytics } from "@/hooks/admin/useAnalytics";
 
 function Stat({ value, label, to }: { value: number; label: string; to: string }) {
   return (
@@ -32,6 +33,7 @@ function AttentionRow({ to, children }: { to: string; children: React.ReactNode 
 
 function AdminDashboardInner() {
   const { data: counts } = useContentCounts();
+  const { data: traffic } = useAnalytics(7);
   const { data: unread = 0 } = useUnreadInquiryCount();
   const { data: activity = [] } = useRecentActivity();
 
