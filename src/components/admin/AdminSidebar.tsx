@@ -45,16 +45,16 @@ const ITEMS = [
     match: (p: string) => p.startsWith("/admin/testimonials"),
   },
   {
-    title: "Settings",
-    url: "/admin/settings",
-    icon: Settings,
-    match: (p: string) => p.startsWith("/admin/settings"),
-  },
-  {
     title: "Users",
     url: "/admin/users",
     icon: UserCog,
     match: (p: string) => p.startsWith("/admin/users"),
+  },
+  {
+    title: "Settings",
+    url: "/admin/settings",
+    icon: Settings,
+    match: (p: string) => p.startsWith("/admin/settings"),
   },
 ];
 
