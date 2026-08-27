@@ -56,6 +56,13 @@ const SettingsEffects = () => {
   return null;
 };
 
+/** First-party pageview tracking. Must sit inside the router. */
+const AnalyticsTracker = () => {
+  usePageTracking();
+  return null;
+};
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SettingsEffects />
