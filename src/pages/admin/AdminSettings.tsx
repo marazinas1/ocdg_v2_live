@@ -268,6 +268,9 @@ function SettingsBody() {
   const [headline, setHeadline] = useState("");
   const [subline, setSubline] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
+  const [quote, setQuote] = useState("");
+  const [quoteAttribution, setQuoteAttribution] = useState("");
+
 
   const [about, setAbout] = useState({
     heroEyebrow: "",
@@ -299,6 +302,9 @@ function SettingsBody() {
     setHeadline(row.hero_headline ?? "");
     setSubline(row.hero_subline ?? "");
     setCtaLabel(row.hero_cta_label ?? "");
+    setQuote(row.home_quote ?? "");
+    setQuoteAttribution(row.home_quote_attribution ?? "");
+
     setAbout({
       heroEyebrow: row.about_hero_eyebrow ?? "",
       heroTitle: row.about_hero_title ?? "",
