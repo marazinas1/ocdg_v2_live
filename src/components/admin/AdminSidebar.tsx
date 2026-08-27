@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Inbox, LayoutDashboard, LogOut, Quote, Settings, UserCog } from "lucide-react";
+import { ArrowLeft, BarChart3, Building2, Inbox, LayoutDashboard, LogOut, Quote, Settings, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminRole } from "@/hooks/admin/useAdminAuth";
 import { Badge } from "@/components/ui/badge";
