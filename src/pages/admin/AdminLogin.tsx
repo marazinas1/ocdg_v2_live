@@ -8,6 +8,7 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // If already signed in as an admin, skip the form.
@@ -29,9 +30,25 @@ const AdminLogin = () => {
     };
   }, [navigate]);
 
+  const handleForgotPassword = async () => {
+    setError(null);
+    setNotice(null);
+
+    if (!email.trim()) {
+      setError("Enter your email address first.");
+      return;
+    }
+
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/admin/set-password`,
+    });
+    setNotice("If that address has an account, a reset link is on its way.");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setLoading(true);
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -125,6 +142,8 @@ const AdminLogin = () => {
                 </p>
               )}
 
+              {notice && <p className="text-sm text-slate">{notice}</p>}
+
               <button
                 type="submit"
                 disabled={loading}
@@ -133,6 +152,14 @@ const AdminLogin = () => {
                 {loading ? "Signing In…" : "Sign In"}
               </button>
             </form>
+
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="mt-4 w-full text-center text-sm text-muted-slate underline underline-offset-4 hover:text-charcoal transition"
+            >
+              Forgot password?
+            </button>
           </div>
 
           <p className="mt-8 text-xs tracking-[0.15em] uppercase text-muted-slate">

@@ -146,7 +146,7 @@ function AdminUsersInner() {
       revoke.mutate(
         { userId: user.id },
         {
-          onSuccess: () => toast.success(`Access revoked for ${user.email}.`),
+          onSuccess: () => toast.success(`Access removed for ${user.email}.`),
           onError: (err: Error) => toast.error(err.message),
         },
       );
@@ -350,7 +350,7 @@ function AdminUsersInner() {
                             disabled={!u.role}
                             onClick={() => setPending({ kind: "revoke", user: u })}
                           >
-                            Revoke
+                            Remove access
                           </Button>
                           <Button
                             variant="ghost"
@@ -382,7 +382,7 @@ function AdminUsersInner() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pending?.kind === "delete" ? "Delete this account?" : "Revoke access?"}
+              {pending?.kind === "delete" ? "Delete this account?" : "Remove access?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pending?.kind === "delete"
@@ -400,7 +400,7 @@ function AdminUsersInner() {
                   : undefined
               }
             >
-              {pending?.kind === "delete" ? "Delete" : "Revoke"}
+              {pending?.kind === "delete" ? "Delete" : "Remove access"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
