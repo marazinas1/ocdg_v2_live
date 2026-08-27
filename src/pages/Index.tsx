@@ -216,6 +216,9 @@ const TestimonialCards = () => {
 
 const Index = () => {
   const [scrollY, setScrollY] = useState(0);
+  const { settings } = useSiteSettings();
+  const hero = settings.hero;
+
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
