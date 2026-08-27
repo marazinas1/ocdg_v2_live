@@ -28,6 +28,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminProperties = lazy(() => import("./pages/admin/AdminProperties"));
 const AdminPropertyForm = lazy(() => import("./pages/admin/AdminPropertyForm"));
 const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
+const AdminTestimonials = lazy(() => import("./pages/admin/AdminTestimonials"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSetPassword = lazy(() => import("./pages/admin/AdminSetPassword"));
 
@@ -90,6 +91,7 @@ const App = () => (
             <Route path="/admin/properties/:id/edit" element={<AdminPropertyForm />} />
             <Route path="/admin/inquiries" element={<AdminInquiries />} />
             <Route path="/admin/preview" element={<PropertyPage />} />
+            <Route path="/admin/testimonials" element={<AdminTestimonials />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             {/* Invited users have no role yet — this must stay unprotected. */}
             <Route path="/admin/set-password" element={<AdminSetPassword />} />
