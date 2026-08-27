@@ -24,8 +24,10 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PropertyPage = lazy(() => import("./pages/PropertyPage"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminProperties = lazy(() => import("./pages/admin/AdminProperties"));
 const AdminPropertyForm = lazy(() => import("./pages/admin/AdminPropertyForm"));
+const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSetPassword = lazy(() => import("./pages/admin/AdminSetPassword"));
 
