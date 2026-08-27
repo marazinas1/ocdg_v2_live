@@ -36,7 +36,8 @@ The 13 existing RLS policies, leads policies, email system, and properties/prope
 - Verify:
   - (a) enum contains developer/owner/editor alongside existing values
   - (b) `is_admin()` returns true for developer and owner
-  - (c) your account row is now `developer` and passes `is_admin()`
+  - (c) your account row is now `developer` and passes `is_admin()`; ZERO rows remain with `role = 'admin'` in user_roles
+  - (c2) new `is_admin()` has EXECUTE granted to authenticated + service_role and revoked from PUBLIC/anon (CREATE OR REPLACE can reset grants — verify, don't assume)
   - (d) all 13 RLS policies unchanged (spot-check policy definitions)
   - (e) the 3 frontend checks use the hierarchy
   - (f) typecheck passes
