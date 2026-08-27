@@ -867,7 +867,7 @@ function FormInner() {
   const handleDelete = async () => {
     if (!id) return;
     await deleteMutation.mutateAsync(id);
-    navigate("/admin", { replace: true });
+    navigate("/admin/properties", { replace: true });
   };
 
   // Preview: serialize current form state into sessionStorage and open the
@@ -966,7 +966,7 @@ function FormInner() {
         <div>
           <button
             type="button"
-            onClick={() => navigate("/admin")}
+            onClick={() => navigate("/admin/properties")}
             className="text-sm text-slate-500 hover:text-slate-900"
           >
             ← Back to properties

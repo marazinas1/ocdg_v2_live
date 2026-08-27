@@ -1,7 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Building2, LogOut, UserCog } from "lucide-react";
+import { Building2, Inbox, LayoutDashboard, LogOut, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminRole } from "@/hooks/admin/useAdminAuth";
+import { Badge } from "@/components/ui/badge";
+import { useUnreadInquiryCount } from "@/hooks/admin/useInquiries";
 import ocdgLogo from "@/assets/ocdg-logo.png";
 import {
   Sidebar,
@@ -19,10 +21,22 @@ import {
 
 const ITEMS = [
   {
-    title: "Properties",
+    title: "Dashboard",
     url: "/admin",
+    icon: LayoutDashboard,
+    match: (p: string) => p === "/admin",
+  },
+  {
+    title: "Properties",
+    url: "/admin/properties",
     icon: Building2,
-    match: (p: string) => p === "/admin" || p.startsWith("/admin/properties"),
+    match: (p: string) => p.startsWith("/admin/properties"),
+  },
+  {
+    title: "Inquiries",
+    url: "/admin/inquiries",
+    icon: Inbox,
+    match: (p: string) => p.startsWith("/admin/inquiries"),
   },
   {
     title: "Users",
@@ -48,6 +62,7 @@ export default function AdminSidebar({
   const navigate = useNavigate();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
+  const { data: unreadCount = 0 } = useUnreadInquiryCount();
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -87,6 +102,11 @@ export default function AdminSidebar({
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
+                      {item.title === "Inquiries" && unreadCount > 0 && (
+                        <Badge className="ml-auto h-5 min-w-5 justify-center px-1.5 text-[11px]">
+                          {unreadCount}
+                        </Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

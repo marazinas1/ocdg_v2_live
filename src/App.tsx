@@ -24,8 +24,10 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PropertyPage = lazy(() => import("./pages/PropertyPage"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminProperties = lazy(() => import("./pages/admin/AdminProperties"));
 const AdminPropertyForm = lazy(() => import("./pages/admin/AdminPropertyForm"));
+const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSetPassword = lazy(() => import("./pages/admin/AdminSetPassword"));
 
@@ -82,9 +84,11 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminProperties />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/properties" element={<AdminProperties />} />
             <Route path="/admin/properties/new" element={<AdminPropertyForm />} />
             <Route path="/admin/properties/:id/edit" element={<AdminPropertyForm />} />
+            <Route path="/admin/inquiries" element={<AdminInquiries />} />
             <Route path="/admin/preview" element={<PropertyPage />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             {/* Invited users have no role yet — this must stay unprotected. */}
