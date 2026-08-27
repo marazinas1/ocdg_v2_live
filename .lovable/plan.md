@@ -18,7 +18,7 @@ The tracker sends the ping with `navigator.sendBeacon` using a JSON blob (`Conte
    - Track on first load as well as on route change (unchanged behaviour otherwise), still skipping `/admin/*`.
 
 2. **Backend (`supabase/functions/track-view/index.ts`)**
-   - Parse the body from raw text (`JSON.parse(await req.text())`) instead of relying on the JSON content type, so both the beacon and the fallback are accepted.
+   - Read the body as text and parse it with a wrapped `JSON.parse(...)` so malformed bodies return the same silent 204 instead of throwing — consistent with the "never breaks the page" design.
    - No change to the origin allowlist, bot filter, hashing or privacy behaviour.
    - Redeploy the function.
 
