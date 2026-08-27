@@ -375,19 +375,13 @@ function SettingsBody() {
     }
   };
 
-  const handleSaveText = async () => {
+  const saveWithToast = async (
+    patch: Parameters<typeof save.mutateAsync>[0]["patch"],
+    description: string,
+  ) => {
     try {
-      await save.mutateAsync({
-        id: rowId,
-        patch: {
-          site_name: siteName.trim() || "Ocean City Development Group",
-          hero_eyebrow: eyebrow.trim() || null,
-          hero_headline: headline.trim() || null,
-          hero_subline: subline.trim() || null,
-          hero_cta_label: ctaLabel.trim() || null,
-        },
-      });
-      toast({ title: "Saved", description: "Homepage content updated." });
+      await save.mutateAsync({ id: rowId, patch });
+      toast({ title: "Saved", description });
     } catch (err) {
       toast({
         variant: "destructive",
@@ -396,6 +390,26 @@ function SettingsBody() {
       });
     }
   };
+
+  const handleSaveBrand = () =>
+    saveWithToast(
+      { site_name: siteName.trim() || "Ocean City Development Group" },
+      "Brand settings updated.",
+    );
+
+  const handleSaveHome = () =>
+    saveWithToast(
+      {
+        hero_eyebrow: eyebrow.trim() || null,
+        hero_headline: headline.trim() || null,
+        hero_subline: subline.trim() || null,
+        hero_cta_label: ctaLabel.trim() || null,
+        home_quote: quote.trim() || null,
+        home_quote_attribution: quoteAttribution.trim() || null,
+      },
+      "Homepage content updated.",
+    );
+
 
   const handleSaveAbout = async (nextPartners: PartnerEntry[] = partners) => {
     await save.mutateAsync({
