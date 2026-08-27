@@ -102,6 +102,11 @@ export default function AdminSidebar({
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
+                      {item.title === "Inquiries" && unreadCount > 0 && (
+                        <Badge className="ml-auto h-5 min-w-5 justify-center px-1.5 text-[11px]">
+                          {unreadCount}
+                        </Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
