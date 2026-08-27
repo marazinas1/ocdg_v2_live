@@ -35,7 +35,7 @@ export function useAdminAuth(): AdminAuthState {
         .from("user_roles")
         .select("role")
         .eq("user_id", userData.user.id)
-        .eq("role", "admin")
+        .in("role", ["developer", "owner"])
         .maybeSingle();
       if (!active) return;
       if (!roleRow) {

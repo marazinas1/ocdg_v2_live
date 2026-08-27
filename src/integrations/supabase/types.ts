@@ -354,7 +354,17 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
+      is_developer: { Args: { _user_id?: string }; Returns: boolean }
+      is_owner: { Args: { _user_id?: string }; Returns: boolean }
+      is_staff: { Args: { _user_id?: string }; Returns: boolean }
       list_property_bucket_paths: {
         Args: { _slug: string }
         Returns: {
@@ -380,7 +390,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin"
+      app_role: "admin" | "developer" | "owner" | "editor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -508,7 +518,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin"],
+      app_role: ["admin", "developer", "owner", "editor"],
     },
   },
 } as const
