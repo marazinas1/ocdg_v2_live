@@ -15,7 +15,7 @@ const corsHeaders = {
 }
 
 // Configuration
-const SITE_NAME = "OCDG_V2_LIVE"
+const SITE_NAME = "Ocean City Development Group"
 const SENDER_DOMAIN = "notify.oceancitydevelopment.com"
 const ROOT_DOMAIN = "oceancitydevelopment.com"
 const FROM_DOMAIN = "notify.oceancitydevelopment.com"
