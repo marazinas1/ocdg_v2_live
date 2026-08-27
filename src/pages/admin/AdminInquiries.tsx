@@ -87,13 +87,17 @@ function InquiryDetail({
                 )}
               </dl>
 
-              {inquiry.message && (
-                <div className="rounded border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Message</p>
+                {inquiry.message ? (
                   <p className="text-sm text-slate-900 whitespace-pre-wrap leading-relaxed">
                     {inquiry.message}
                   </p>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm italic text-slate-500">No message was submitted.</p>
+                )}
+              </div>
+
 
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button variant="outline" size="sm" onClick={() => onToggleRead(inquiry)}>
