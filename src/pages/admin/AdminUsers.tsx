@@ -400,7 +400,7 @@ function AdminUsersInner() {
                   : undefined
               }
             >
-              {pending?.kind === "delete" ? "Delete" : "Revoke"}
+              {pending?.kind === "delete" ? "Delete" : "Remove access"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
