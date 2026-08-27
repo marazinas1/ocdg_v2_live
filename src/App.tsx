@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { lazyWithRetry as lazy } from "./lib/lazyWithRetry";
 import { useFaviconFromSettings } from "@/hooks/useSiteSettings";
 import ScrollToTop from "./components/ScrollToTop";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 
 // Lazy-load all non-landing pages so the initial bundle stays small.
@@ -71,6 +72,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <AnalyticsTracker />
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Index />} />
