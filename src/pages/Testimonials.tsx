@@ -1,48 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import GlobalNav from "@/components/GlobalNav";
 import SEO from "@/components/SEO";
 import GlobalFooter from "@/components/GlobalFooter";
+import { useTestimonials, quoteParagraphs } from "@/hooks/useTestimonials";
 import subpageHero from "@/assets/subpage-hero.jpg";
 
-const testimonials = [
-  {
-    author: "Patti & Ralph Melfi",
-    paragraphs: [
-      "Patti and I are very happy that we chose Scott Halliday to build our Ocean City dream home.",
-      "It is an emotional and financial commitment to build a home and we certainly wanted to work with someone we can trust.",
-      "Scott Halliday is a person of integrity that builds quality homes at a great value.",
-      "Our experience with Scott began when we found a location and lot that we were interested in perusing as a future home build project. Prior to purchasing the lot, which had a house that would need to be demolished, we also had to be sure that we could build a home we had in mind and stay within our budget.",
-      "Time is of the essence when buying and Scott immediately inspected the property, looked at an example of a home we wanted to build, checked into the zoning parameters, and confirmed that we could in fact build this home on that lot, and within our budget.",
-      "Scott reviewed the path forward and what steps were necessary in the process. He outlined the standard materials that he uses in his base price and they were of a higher quality than other builders. Some of the most important factors in our decision was Scott's long term experience building in Ocean City and his financial stability, which is NOT a given in today's building market.",
-      "Nothing was an issue for Scott — no problems with permits, schedules or budgets! The only additions or changes were at our request, and the costs were always fair.",
-      "We HIGHLY recommend Scott Halliday to build your dream home!",
-    ],
-  },
-  {
-    author: "Ken and Trudie O'Neill",
-    paragraphs: [
-      "What a wonderful experience it was working with Patrick Halliday! He was so extremely helpful and patient during the whole process of purchasing our new Halliday-Leonard home.",
-      "We received excellent customer service. He is dedicated and very professional. Patrick went the extra mile for us and we so appreciate all his hard work. He returned our calls and e-mails immediately and made sure all our questions were answered. He made settlement a breeze. Our Halliday-Leonard home is beautiful.",
-      "We have nothing but praise for Patrick Halliday. Thank you for everything, Patrick.",
-    ],
-    signoff: "Warm regards, Ken and Trudie O'Neill",
-  },
-  {
-    author: "Mara and Jack LaVoice",
-    paragraphs: [
-      "My wife and I would just like to express our appreciation for your excellent customer service as we enjoy the 1yr. anniversary of our new home.",
-      "From the first day we toured our new Halliday-Leonard home under construction, you have provided wise counsel on all aspects of the construction phase, settlement, and indeed even helpful hints on \"best practices\" for summer rental. Your high level of personal customer service and attention, promptness of communication reply, and dedication to satisfaction of our requests have been extraordinary. Your passion and knowledge of the Ocean City home market have resulted in a wonderful family \"escape\" home and solid investment as well.",
-      "Our new Halliday-Leonard home on 4th street is simply gorgeous. The high quality of build and attention to detail is evident in every aspect of our home. The Halliday-Leonard construction team has promptly addressed our one year \"punch list\" of minor repairs, and even provided several \"free of charge\" extra's.",
-      "It is refreshing to see the pride your construction team takes in going the extra mile for your customers.",
-      "All of our visiting friends comment on the \"family friendly\" and cozy great room/kitchen design, as well as the delight of sitting on any one of our three outside decks.",
-      "Again, thank you for making our special vacation home dream come to life. We look forward to many years of happy family memories in Ocean City.",
-    ],
-    signoff: "Warm regards, Mara and Jack LaVoice",
-  },
-];
 
 const Testimonials = () => {
   const [scrollY, setScrollY] = useState(0);
