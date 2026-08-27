@@ -22,6 +22,13 @@
       "when": 1787835077754,
       "tag": "0002_site_settings_about_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787836284855,
+      "tag": "0003_site_settings_home_quote",
+      "breakpoints": true
     }
   ]
 }
