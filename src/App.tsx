@@ -21,7 +21,6 @@ const Sold = lazy(() => import("./pages/Sold"));
 const Testimonials = lazy(() => import("./pages/Testimonials"));
 const Contact = lazy(() => import("./pages/Contact"));
 const GalleryPage = lazy(() => import("./pages/GalleryPage"));
-const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PropertyPage = lazy(() => import("./pages/PropertyPage"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -93,7 +92,6 @@ const App = () => (
             <Route path="/sold" element={<Sold />} />
             <Route path="/testimonials" element={<Testimonials />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/properties" element={<AdminProperties />} />
