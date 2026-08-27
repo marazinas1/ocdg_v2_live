@@ -84,9 +84,11 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminProperties />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/properties" element={<AdminProperties />} />
             <Route path="/admin/properties/new" element={<AdminPropertyForm />} />
             <Route path="/admin/properties/:id/edit" element={<AdminPropertyForm />} />
+            <Route path="/admin/inquiries" element={<AdminInquiries />} />
             <Route path="/admin/preview" element={<PropertyPage />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             {/* Invited users have no role yet — this must stay unprotected. */}
