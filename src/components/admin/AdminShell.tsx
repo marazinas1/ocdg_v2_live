@@ -1,50 +1,31 @@
 import { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import AdminSidebar from "./AdminSidebar";
+import type { AdminRole } from "@/hooks/admin/useAdminAuth";
 
 export default function AdminShell({
   email,
+  role,
   children,
 }: {
   email: string;
+  role: AdminRole;
   children: ReactNode;
 }) {
-  const navigate = useNavigate();
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/admin/login", { replace: true });
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link to="/admin" className="font-semibold text-slate-900 tracking-tight">
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-slate-50">
+        <AdminSidebar email={email} role={role} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-14 flex items-center gap-3 border-b border-slate-200 bg-white px-4 sticky top-0 z-10">
+            <SidebarTrigger />
+            <span className="font-semibold text-slate-900 tracking-tight truncate">
               OCDG Admin
-            </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link to="/admin" className="text-slate-600 hover:text-slate-900">
-                Properties
-              </Link>
-              <Link to="/admin/users" className="text-slate-600 hover:text-slate-900">
-                Users
-              </Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-600 hidden sm:inline">{email}</span>
-            <Button variant="outline" size="sm" onClick={signOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign out
-            </Button>
-          </div>
+            </span>
+          </header>
+          <main className="flex-1 px-4 py-6 md:px-6 md:py-8">{children}</main>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 }
