@@ -21,8 +21,10 @@ export function usePageTracking() {
       referrer: typeof document !== "undefined" ? document.referrer : "",
     });
 
+    // text/plain avoids a CORS preflight, so sendBeacon can actually
+    // transmit the body instead of silently dropping after OPTIONS.
     try {
-      const blob = new Blob([payload], { type: "application/json" });
+      const blob = new Blob([payload], { type: "text/plain" });
       if (navigator.sendBeacon?.(ENDPOINT, blob)) return;
     } catch {
       /* fall through to fetch */
@@ -30,7 +32,7 @@ export function usePageTracking() {
 
     void fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain" },
       body: payload,
       keepalive: true,
     }).catch(() => {
