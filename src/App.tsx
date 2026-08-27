@@ -26,6 +26,8 @@ const PropertyPage = lazy(() => import("./pages/PropertyPage"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminProperties = lazy(() => import("./pages/admin/AdminProperties"));
 const AdminPropertyForm = lazy(() => import("./pages/admin/AdminPropertyForm"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSetPassword = lazy(() => import("./pages/admin/AdminSetPassword"));
 
 const queryClient = new QueryClient();
 
