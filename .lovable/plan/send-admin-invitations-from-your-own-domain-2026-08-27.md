@@ -16,6 +16,7 @@ The `manage-users` invite flow, roles, and the `/admin/set-password` landing pag
 
 Setup adds nameserver records for a mail subdomain. Your website DNS and the apex domain are unaffected.
 
-<presentation-actions>
-<presentation-open-email-setup>Set up email domain</presentation-open-email-setup>
-</presentation-actions>
+&nbsp;
+
+Set up email domain
+&nbsp;
