@@ -40,10 +40,13 @@ const GlobalFooter = () => {
             <Link to="/about" className="block text-sm text-white/70 hover:text-white transition-colors mb-1">About Us</Link>
           </div>
         </div>
-        <div className="border-t border-white/10 pt-8 text-center">
+        <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-white/40">
             © 2026 Ocean City Development Group, LLC. All rights reserved.
           </p>
+          <Link to="/admin" className="text-xs text-white/30 hover:text-white/60 transition-colors">
+            Admin
+          </Link>
         </div>
       </div>
     </footer>
