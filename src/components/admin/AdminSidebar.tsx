@@ -1,7 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Building2, LogOut, UserCog } from "lucide-react";
+import { Building2, Inbox, LayoutDashboard, LogOut, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminRole } from "@/hooks/admin/useAdminAuth";
+import { Badge } from "@/components/ui/badge";
+import { useUnreadInquiryCount } from "@/hooks/admin/useInquiries";
 import ocdgLogo from "@/assets/ocdg-logo.png";
 import {
   Sidebar,
@@ -19,10 +21,22 @@ import {
 
 const ITEMS = [
   {
-    title: "Properties",
+    title: "Dashboard",
     url: "/admin",
+    icon: LayoutDashboard,
+    match: (p: string) => p === "/admin",
+  },
+  {
+    title: "Properties",
+    url: "/admin/properties",
     icon: Building2,
-    match: (p: string) => p === "/admin" || p.startsWith("/admin/properties"),
+    match: (p: string) => p.startsWith("/admin/properties"),
+  },
+  {
+    title: "Inquiries",
+    url: "/admin/inquiries",
+    icon: Inbox,
+    match: (p: string) => p.startsWith("/admin/inquiries"),
   },
   {
     title: "Users",
