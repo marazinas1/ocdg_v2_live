@@ -611,20 +611,41 @@ function SettingsBody() {
             />
           </div>
 
+          <div>
+            <Label htmlFor="home-quote">Quote</Label>
+            <Textarea
+              id="home-quote"
+              value={quote}
+              onChange={(e) => setQuote(e.target.value)}
+              placeholder={HERO_FALLBACKS.quote}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="home-quote-attribution">Quote attribution</Label>
+            <Input
+              id="home-quote-attribution"
+              value={quoteAttribution}
+              onChange={(e) => setQuoteAttribution(e.target.value)}
+              placeholder={HERO_FALLBACKS.quoteAttribution}
+              className="mt-2"
+            />
+          </div>
+
           <p className="text-xs text-slate-500">
             Leave a field empty to fall back to the default wording shown in grey.
           </p>
 
-          <Button onClick={handleSaveText} disabled={save.isPending}>
-            {save.isPending ? "Saving…" : "Save changes"}
+          <Button onClick={handleSaveHome} disabled={save.isPending}>
+            {save.isPending ? "Saving…" : "Save homepage content"}
           </Button>
         </div>
-      </section>
+      </TabsContent>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-          About page
-        </h2>
+      <TabsContent value="about" className="space-y-4">
+
 
         {ABOUT_SLOTS.map((slot) => (
           <AssetSlot
