@@ -8,6 +8,13 @@
       "when": 1787833797212,
       "tag": "0000_create_testimonials",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787834375712,
+      "tag": "0001_create_site_settings",
+      "breakpoints": true
     }
   ]
 }

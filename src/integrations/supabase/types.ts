@@ -301,6 +301,54 @@ export type Database = {
           },
         ]
       }
+      site_settings: {
+        Row: {
+          created_at: string
+          favicon_path: string | null
+          hero_cta_label: string | null
+          hero_eyebrow: string | null
+          hero_headline: string | null
+          hero_image_path: string | null
+          hero_subline: string | null
+          id: string
+          logo_dark_path: string | null
+          logo_path: string | null
+          singleton: boolean
+          site_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          favicon_path?: string | null
+          hero_cta_label?: string | null
+          hero_eyebrow?: string | null
+          hero_headline?: string | null
+          hero_image_path?: string | null
+          hero_subline?: string | null
+          id?: string
+          logo_dark_path?: string | null
+          logo_path?: string | null
+          singleton?: boolean
+          site_name?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          favicon_path?: string | null
+          hero_cta_label?: string | null
+          hero_eyebrow?: string | null
+          hero_headline?: string | null
+          hero_image_path?: string | null
+          hero_subline?: string | null
+          id?: string
+          logo_dark_path?: string | null
+          logo_path?: string | null
+          singleton?: boolean
+          site_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
