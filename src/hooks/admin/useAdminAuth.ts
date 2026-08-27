@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export type AdminRole = "developer" | "owner";
+
 export type AdminAuthState =
   | { status: "loading" }
   | { status: "unauthorized" }
-  | { status: "admin"; userId: string; email: string };
+  | { status: "admin"; userId: string; email: string; role: AdminRole };
 
 export function useAdminAuth(): AdminAuthState {
   const [state, setState] = useState<AdminAuthState>({ status: "loading" });
