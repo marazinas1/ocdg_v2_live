@@ -497,11 +497,22 @@ function SettingsBody() {
       </div>
 
       <Tabs defaultValue="brand" className="space-y-6">
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="brand">Brand</TabsTrigger>
-          <TabsTrigger value="homepage">Homepage</TabsTrigger>
-          <TabsTrigger value="about">About page</TabsTrigger>
+        <TabsList className="flex flex-wrap justify-start gap-2 h-auto bg-transparent p-0">
+          {[
+            { value: "brand", label: "Brand" },
+            { value: "homepage", label: "Homepage" },
+            { value: "about", label: "About page" },
+          ].map((t) => (
+            <TabsTrigger
+              key={t.value}
+              value={t.value}
+              className="rounded-[4px] px-5 py-2 text-xs font-medium uppercase tracking-wider transition-all duration-300 border border-border bg-transparent text-slate shadow-none hover:text-charcoal data-[state=active]:bg-charcoal data-[state=active]:text-white data-[state=active]:border-charcoal data-[state=active]:shadow-none"
+            >
+              {t.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
+
 
       <TabsContent value="brand" className="space-y-4">
         <p className="text-xs text-slate-500">
