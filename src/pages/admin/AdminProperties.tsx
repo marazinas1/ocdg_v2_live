@@ -1,11 +1,25 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, Pencil, Image as ImageIcon } from "lucide-react";
-import { useProperties } from "@/hooks/admin/useProperties";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Plus,
+  Pencil,
+  Search,
+  Trash2,
+  MoreVertical,
+  Copy,
+  ImageOff,
+  LayoutGrid,
+  List as ListIcon,
+  CalendarDays,
+  ExternalLink,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useProperties, type PropertyListItem } from "@/hooks/admin/useProperties";
 import {
   useUpdatePropertyPublished,
   useUpdatePropertyStatus,
 } from "@/hooks/admin/useUpdatePropertyStatus";
+import { useDeleteProperty } from "@/hooks/admin/useDeleteProperty";
 import {
   PROPERTY_STATUSES,
   STATUS_LABELS,
@@ -16,7 +30,9 @@ import StatusBadge from "@/components/admin/StatusBadge";
 import AdminProtected from "@/components/admin/AdminProtected";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -24,196 +40,491 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
-type Filter = "all" | PropertyStatus;
+type ViewMode = "grid" | "table";
+type StatusFilter = "all" | PropertyStatus;
+type PublishFilter = "all" | "published" | "draft";
 type PageFilter = "all" | "full" | "record_only";
+type SortKey = "newest" | "title-asc" | "listed-desc";
+
+const VIEW_STORAGE_KEY = "admin-properties-view";
 
 function AdminPropertiesInner() {
   const { data, isLoading } = useProperties();
   const updateStatus = useUpdatePropertyStatus();
   const updatePublished = useUpdatePropertyPublished();
-  const [filter, setFilter] = useState<Filter>("all");
-  const [pageFilter, setPageFilter] = useState<PageFilter>("all");
+  const deleteProperty = useDeleteProperty();
+
+  const [view, setView] = useState<ViewMode>("grid");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [publishFilter, setPublishFilter] = useState<PublishFilter>("all");
+  const [pageFilter, setPageFilter] = useState<PageFilter>("all");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(VIEW_STORAGE_KEY);
+    if (saved === "grid" || saved === "table") setView(saved);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(VIEW_STORAGE_KEY, view);
+  }, [view]);
+
+  const rows = data ?? [];
 
   const filtered = useMemo(() => {
-    const rows = data ?? [];
-    return rows.filter((r) => {
-      if (filter !== "all" && r.status !== filter) return false;
+    const q = search.trim().toLowerCase();
+    let list = rows.filter((r) => {
+      if (q && !`${r.title} ${r.slug}`.toLowerCase().includes(q)) return false;
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (publishFilter === "published" && !r.published) return false;
+      if (publishFilter === "draft" && r.published) return false;
       if (pageFilter === "full" && !r.has_page) return false;
       if (pageFilter === "record_only" && r.has_page) return false;
-      if (search && !r.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [data, filter, pageFilter, search]);
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+        case "listed-desc":
+          return (b.listed_date ?? "").localeCompare(a.listed_date ?? "");
+        default:
+          return b.updated_at.localeCompare(a.updated_at);
+      }
+    });
+    return list;
+  }, [rows, search, statusFilter, publishFilter, pageFilter, sort]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setPublishFilter("all");
+    setPageFilter("all");
+  };
+
+  const copyLink = async (slug: string) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/developments/${slug}`);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Could not copy link");
+    }
+  };
+
+  const onTogglePublished = (id: string, published: boolean) =>
+    updatePublished.mutate({ id, published });
+
+  const onChangeStatus = (id: string, status: string) =>
+    updateStatus.mutate({ id, status });
+
+  const confirmDelete = () => {
+    if (!toDelete) return;
+    deleteProperty.mutate(toDelete.id, {
+      onSettled: () => setToDelete(null),
+    });
+  };
+
+  const handlers: RowHandlers = {
+    onDelete: setToDelete,
+    onCopy: copyLink,
+    onTogglePublished,
+    onChangeStatus,
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Properties</h1>
-        <Link to="/admin/properties/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Property
-          </Button>
-        </Link>
-      </div>
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-semibold text-slate-900">Properties</h1>
+          <p className="text-sm text-slate-500">
+            {rows.length} {rows.length === 1 ? "property" : "properties"} total
+          </p>
+        </div>
+        <Button asChild>
+          <Link to="/admin/properties/new">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add new property</span>
+          </Link>
+        </Button>
+      </header>
 
-      <div className="flex flex-wrap gap-4 items-center">
-        <Input
-          placeholder="Search by title…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
-        />
-        <div className="flex gap-1 rounded-md bg-slate-100 p-1">
-          {(["all", ...PROPERTY_STATUSES] as Filter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={
-                "px-3 py-1.5 text-sm rounded transition " +
-                (filter === f
-                  ? "bg-white shadow-sm text-slate-900"
-                  : "text-slate-600 hover:text-slate-900")
-              }
-            >
-              {f === "all" ? "All" : STATUS_LABELS[f]}
-            </button>
-          ))}
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-card p-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:min-w-[220px]">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title or slug…"
+            className="pl-9"
+          />
         </div>
-        <div className="flex gap-1 rounded-md bg-slate-100 p-1">
-          {(
-            [
-              ["all", "All pages"],
-              ["full", "Full page"],
-              ["record_only", "Record only"],
-            ] as [PageFilter, string][]
-          ).map(([f, label]) => (
-            <button
-              key={f}
-              onClick={() => setPageFilter(f)}
-              className={
-                "px-3 py-1.5 text-sm rounded transition " +
-                (pageFilter === f
-                  ? "bg-white shadow-sm text-slate-900"
-                  : "text-slate-600 hover:text-slate-900")
-              }
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+          <SelectTrigger className="w-full sm:w-[170px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {PROPERTY_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {STATUS_LABELS[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={publishFilter} onValueChange={(v) => setPublishFilter(v as PublishFilter)}>
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="Visibility" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All visibility</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={pageFilter} onValueChange={(v) => setPageFilter(v as PageFilter)}>
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="Pages" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All pages</SelectItem>
+            <SelectItem value="full">Full page</SelectItem>
+            <SelectItem value="record_only">Record only</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+          <SelectTrigger className="w-full sm:w-[190px]">
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Recently updated</SelectItem>
+            <SelectItem value="title-asc">Title A–Z</SelectItem>
+            <SelectItem value="listed-desc">Listed date ↓</SelectItem>
+          </SelectContent>
+        </Select>
+        <ToggleGroup
+          type="single"
+          value={view}
+          onValueChange={(v) => v && setView(v as ViewMode)}
+          className="sm:ml-auto"
+          variant="outline"
+        >
+          <ToggleGroupItem value="grid" aria-label="Card view">
+            <LayoutGrid className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="table" aria-label="List view">
+            <ListIcon className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       {isLoading ? (
-        <div className="text-slate-500 py-16 text-center">Loading…</div>
+        <div className="py-16 text-center text-slate-500">Loading…</div>
+      ) : rows.length === 0 ? (
+        <EmptyState />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-24 bg-white rounded-lg border border-slate-200">
-          <p className="text-slate-600 mb-6">
-            {(data ?? []).length === 0
-              ? "No properties yet. Create your first one."
-              : "No properties match your filters."}
-          </p>
-          {(data ?? []).length === 0 && (
-            <Link to="/admin/properties/new">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Property
-              </Button>
-            </Link>
-          )}
-        </div>
+        <NoResults onClear={clearFilters} />
+      ) : view === "grid" ? (
+        <GridView items={filtered} {...handlers} />
       ) : (
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-3 w-20">Image</th>
-                <th className="text-left px-4 py-3">Title</th>
-                <th className="text-left px-4 py-3">Price</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Published</th>
-                <th className="text-left px-4 py-3">Listed</th>
-                <th className="text-right px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">
-                    <div className="w-14 h-14 rounded bg-slate-100 flex items-center justify-center overflow-hidden">
-                      {row.card_image_url ? (
-                        <img
-                          src={row.card_image_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <ImageIcon className="w-5 h-5 text-slate-400" />
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{row.title}</div>
-                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                      <span>/{row.slug}</span>
-                      {!row.has_page && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] uppercase tracking-wider">
-                          Record only
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{row.price ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {isPropertyStatus(row.status) && <StatusBadge status={row.status} />}
-                      <Select
-                        value={row.status}
-                        onValueChange={(v) =>
-                          updateStatus.mutate({ id: row.id, status: v })
-                        }
-                      >
-                        <SelectTrigger className="w-[150px] h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PROPERTY_STATUSES.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {STATUS_LABELS[s]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Switch
-                      checked={row.published}
-                      onCheckedChange={(checked) =>
-                        updatePublished.mutate({ id: row.id, published: checked })
-                      }
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {row.listed_date ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link to={`/admin/properties/${row.id}/edit`}>
-                      <Button variant="outline" size="sm">
-                        <Pencil className="w-3.5 h-3.5 mr-1.5" />
-                        Edit
-                      </Button>
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TableView items={filtered} {...handlers} />
       )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete property?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toDelete
+                ? `“${toDelete.title}” and all of its images will be permanently removed.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function PublishBadge({ published }: { published: boolean }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        "border-transparent",
+        published ? "bg-emerald-500/15 text-emerald-700" : "bg-muted text-slate-600",
+      )}
+    >
+      {published ? "Published" : "Draft"}
+    </Badge>
+  );
+}
+
+function RecordOnlyBadge() {
+  return (
+    <Badge variant="secondary" className="border-transparent bg-slate-900/10 text-slate-700">
+      Record only
+    </Badge>
+  );
+}
+
+function Thumb({ src, alt, className }: { src?: string | null; alt: string; className?: string }) {
+  if (!src) {
+    return (
+      <div className={cn("grid place-items-center bg-slate-100 text-slate-400", className)}>
+        <ImageOff className="h-5 w-5" />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={cn("object-cover", className)} loading="lazy" />;
+}
+
+type RowHandlers = {
+  onDelete: (v: { id: string; title: string }) => void;
+  onCopy: (slug: string) => void;
+  onTogglePublished: (id: string, published: boolean) => void;
+  onChangeStatus: (id: string, status: string) => void;
+};
+
+function RowActions({
+  p,
+  onDelete,
+  onCopy,
+}: { p: PropertyListItem } & Pick<RowHandlers, "onDelete" | "onCopy">) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="More actions">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onCopy(p.slug)}>
+          <Copy className="h-4 w-4" />
+          Copy link
+        </DropdownMenuItem>
+        {p.has_page && (
+          <DropdownMenuItem asChild>
+            <a href={`/developments/${p.slug}`} target="_blank" rel="noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              View on site
+            </a>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          onClick={() => onDelete({ id: p.id, title: p.title })}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function GridView({
+  items,
+  onDelete,
+  onCopy,
+  onTogglePublished,
+}: { items: PropertyListItem[] } & RowHandlers) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {items.map((p) => (
+        <Card key={p.id} className="overflow-hidden pt-0 transition-shadow hover:shadow-md">
+          <div className="relative">
+            <Thumb src={p.card_image_url} alt={p.title} className="aspect-[4/3] w-full" />
+            <div className="absolute left-3 top-3">
+              <PublishBadge published={p.published} />
+            </div>
+            <div className="absolute right-3 top-3">
+              {isPropertyStatus(p.status) && <StatusBadge status={p.status} />}
+            </div>
+          </div>
+          <CardContent className="space-y-3 pt-4">
+            <div className="min-w-0">
+              <h3 className="truncate font-semibold text-slate-900">{p.title}</h3>
+              <p className="truncate text-xs text-slate-500">/{p.slug}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
+              <span>{p.price ?? "—"}</span>
+              {p.listed_date ? (
+                <span className="inline-flex items-center gap-1">
+                  <CalendarDays className="h-4 w-4" />
+                  {p.listed_date}
+                </span>
+              ) : null}
+              {!p.has_page && <RecordOnlyBadge />}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Switch
+                checked={p.published}
+                onCheckedChange={(c) => onTogglePublished(p.id, c)}
+                aria-label="Published"
+              />
+              <span>{p.published ? "Visible on site" : "Hidden"}</span>
+            </div>
+          </CardContent>
+          <CardFooter className="flex items-center justify-between gap-2 border-t border-slate-200 pt-4">
+            <Button asChild variant="secondary" size="sm" className="flex-1">
+              <Link to={`/admin/properties/${p.id}/edit`}>
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+            <RowActions p={p} onDelete={onDelete} onCopy={onCopy} />
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function TableView({
+  items,
+  onDelete,
+  onCopy,
+  onTogglePublished,
+  onChangeStatus,
+}: { items: PropertyListItem[] } & RowHandlers) {
+  const navigate = useNavigate();
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-card">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Property</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Published</TableHead>
+            <TableHead>Listed</TableHead>
+            <TableHead className="w-[140px] text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Thumb
+                    src={p.card_image_url}
+                    alt={p.title}
+                    className="h-10 w-10 shrink-0 rounded-md"
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-slate-900">{p.title}</div>
+                    <div className="flex items-center gap-2 truncate text-xs text-slate-500">
+                      <span>/{p.slug}</span>
+                      {!p.has_page && <RecordOnlyBadge />}
+                    </div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-slate-600">{p.price ?? "—"}</TableCell>
+              <TableCell>
+                <Select value={p.status} onValueChange={(v) => onChangeStatus(p.id, v)}>
+                  <SelectTrigger className="h-8 w-[150px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROPERTY_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <Switch
+                  checked={p.published}
+                  onCheckedChange={(c) => onTogglePublished(p.id, c)}
+                  aria-label="Published"
+                />
+              </TableCell>
+              <TableCell className="text-slate-600">{p.listed_date ?? "—"}</TableCell>
+              <TableCell>
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Edit"
+                    onClick={() => navigate(`/admin/properties/${p.id}/edit`)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <RowActions p={p} onDelete={onDelete} onCopy={onCopy} />
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-lg border border-dashed border-slate-200 bg-card p-10 text-center">
+      <h3 className="text-lg font-semibold text-slate-900">No properties yet</h3>
+      <p className="mt-1 text-sm text-slate-500">Add your first property to get started.</p>
+      <Button asChild className="mt-4">
+        <Link to="/admin/properties/new">
+          <Plus className="h-4 w-4" />
+          Add new property
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+function NoResults({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="rounded-lg border border-dashed border-slate-200 bg-card p-10 text-center">
+      <h3 className="text-lg font-semibold text-slate-900">No properties match your filters</h3>
+      <p className="mt-1 text-sm text-slate-500">Try adjusting the search or filters.</p>
+      <Button variant="outline" className="mt-4" onClick={onClear}>
+        Clear filters
+      </Button>
     </div>
   );
 }
