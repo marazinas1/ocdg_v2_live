@@ -72,6 +72,9 @@ const BRAND_SLOTS: SlotDef[] = [
     fallbackUrl: FALLBACK_FAVICON,
     fallbackNote: "Currently using the built-in favicon.",
   },
+];
+
+const HOME_SLOTS: SlotDef[] = [
   {
     key: "hero_image_path",
     kind: "hero",
