@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, UserPlus } from "lucide-react";
+import { Copy, ShieldCheck, UserPlus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import AdminProtected from "@/components/admin/AdminProtected";
 import { useAdminAuth } from "@/hooks/admin/useAdminAuth";
 import {
