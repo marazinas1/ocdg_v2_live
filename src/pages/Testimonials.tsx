@@ -44,12 +44,12 @@ const Testimonials = () => {
   // Handle hash anchor — scroll to specific testimonial slide
   useEffect(() => {
     if (!emblaApi || !location.hash) return;
-    const hashMap: Record<string, number> = { "#melfi": 0, "#oneill": 1, "#lavoice": 2 };
-    const idx = hashMap[location.hash];
-    if (idx !== undefined) {
+    const target = location.hash.replace("#", "");
+    const idx = testimonials.findIndex((t) => t.anchor === target);
+    if (idx >= 0) {
       setTimeout(() => emblaApi.scrollTo(idx), 300);
     }
-  }, [emblaApi, location.hash]);
+  }, [emblaApi, location.hash, testimonials]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -66,8 +66,8 @@ const Testimonials = () => {
           url: "https://oceancitydevelopment.com/testimonials",
           review: testimonials.map((t) => ({
             "@type": "Review",
-            author: { "@type": "Person", name: t.author },
-            reviewBody: t.paragraphs.join(" "),
+            author: { "@type": "Person", name: t.author_name },
+            reviewBody: t.quote,
           })),
         }}
       />
@@ -113,7 +113,8 @@ const Testimonials = () => {
               <div className="flex">
                 {testimonials.map((t, i) => (
                   <div
-                    key={i}
+                    key={t.id}
+                    id={t.anchor ?? undefined}
                     className="flex-shrink-0 px-4"
                     style={{ flex: "0 0 100%", minWidth: 0 }}
                   >
@@ -122,7 +123,7 @@ const Testimonials = () => {
                         <path d="M11.3 2.5c-1.4.7-2.5 1.6-3.4 2.7C6.9 6.3 6.3 7.5 5.9 8.9c-.4 1.3-.5 2.8-.3 4.3h.1c.5-.5 1.2-.8 2-.8 1 0 1.9.4 2.6 1.1.7.7 1.1 1.6 1.1 2.7 0 1-.4 1.9-1.1 2.6-.7.7-1.6 1.1-2.7 1.1-1.2 0-2.2-.5-3-1.4-.8-1-1.2-2.2-1.2-3.8 0-2 .4-3.8 1.2-5.5.8-1.7 1.9-3.1 3.3-4.2 1.4-1.1 2.9-1.9 4.5-2.3l-.1-.2zm10 0c-1.4.7-2.5 1.6-3.4 2.7-1 1.1-1.6 2.3-2 3.7-.4 1.3-.5 2.8-.3 4.3h.1c.5-.5 1.2-.8 2-.8 1 0 1.9.4 2.6 1.1.7.7 1.1 1.6 1.1 2.7 0 1-.4 1.9-1.1 2.6-.7.7-1.6 1.1-2.7 1.1-1.2 0-2.2-.5-3-1.4-.8-1-1.2-2.2-1.2-3.8 0-2 .4-3.8 1.2-5.5.8-1.7 1.9-3.1 3.3-4.2 1.4-1.1 2.9-1.9 4.5-2.3l-.1-.2z" />
                       </svg>
                       <div className="space-y-4 mb-8 pr-2">
-                        {t.paragraphs.map((p, j) => (
+                        {quoteParagraphs(t.quote).map((p, j) => (
                           <p key={j} className="text-body text-base leading-relaxed">
                             {p}
                           </p>
@@ -130,7 +131,7 @@ const Testimonials = () => {
                       </div>
                       <div className="divider mb-4" />
                       <p className="text-sm font-medium text-charcoal">
-                        {(t as any).signoff || t.author}
+                        {t.author_detail || t.author_name}
                       </p>
                     </div>
                   </div>
