@@ -536,14 +536,32 @@ function SettingsBody() {
             onRemove={() => handleRemove(slot)}
           />
         ))}
-      </section>
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <Button onClick={handleSaveBrand} disabled={save.isPending}>
+            {save.isPending ? "Saving…" : "Save brand settings"}
+          </Button>
+        </div>
+      </TabsContent>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-          Homepage hero
-        </h2>
+      <TabsContent value="homepage" className="space-y-4">
+        {HOME_SLOTS.map((slot) => (
+          <AssetSlot
+            key={slot.key}
+            label={slot.label}
+            help={slot.help}
+            url={urlFor(slot)}
+            hasUpload={!!pathFor(slot.key)}
+            dark={slot.dark}
+            note={slot.fallbackNote}
+            busy={busyKey === slot.key}
+            progress={progress}
+            onPick={(file) => handleUpload(slot, file)}
+            onRemove={() => handleRemove(slot)}
+          />
+        ))}
 
         <div className="space-y-5 rounded-lg border border-slate-200 bg-white p-5">
+
           <div>
             <Label htmlFor="hero-eyebrow">Small line above the headline</Label>
             <Input
