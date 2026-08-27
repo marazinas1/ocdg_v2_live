@@ -1155,18 +1155,15 @@ const PropertyInquiryForm = ({ property }: { property: PropertyRow }) => {
 
       // Lead is saved. Email notification is best-effort — don't fail the UX
       // if the invoke errors; the inquiry is already captured in the DB.
-      const { error: emailError } = await supabase.functions.invoke("send-transactional-email", {
+      const { error: emailError } = await supabase.functions.invoke("send-inquiry-notification", {
         body: {
-          templateName: "inquiry-notification",
-          idempotencyKey: `property-${property.slug}-${id}`,
-          templateData: {
-            name: form.name,
-            email: form.email,
-            phone: form.phone,
-            interest: form.interest,
-            message: "",
-            source,
-          },
+          leadId: id,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          interest: form.interest,
+          message: "",
+          source,
         },
       });
       if (emailError) {

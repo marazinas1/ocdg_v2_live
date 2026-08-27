@@ -66,18 +66,15 @@ const Contact = () => {
       }
 
       // Lead is saved. Email notification is best-effort.
-      const { error: emailError } = await supabase.functions.invoke("send-transactional-email", {
+      const { error: emailError } = await supabase.functions.invoke("send-inquiry-notification", {
         body: {
-          templateName: "inquiry-notification",
-          idempotencyKey: `contact-${id}`,
-          templateData: {
-            name: form.name,
-            email: form.email,
-            phone: form.phone,
-            interest: form.interest,
-            message: form.message,
-            source: "Contact page",
-          },
+          leadId: id,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          interest: form.interest,
+          message: form.message,
+          source: "Contact page",
         },
       });
       if (emailError) {
