@@ -269,16 +269,29 @@ function ImageSlotBox({
                 </>
               )}
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-red-600 hover:text-red-700"
-              onClick={onRemove}
-            >
-              <X className="w-3.5 h-3.5 mr-1" />
-              Remove
-            </Button>
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => inputRef.current?.click()}
+              >
+                Replace
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={uploading}
+                className="text-red-600 hover:text-red-700"
+                onClick={onRemove}
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                Remove
+              </Button>
+            </div>
+
           </div>
         </>
       )}
