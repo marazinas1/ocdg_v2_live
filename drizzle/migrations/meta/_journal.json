@@ -29,6 +29,13 @@
       "when": 1787836284855,
       "tag": "0003_site_settings_home_quote",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787838273715,
+      "tag": "0004_create_page_views_analytics",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import AdminProtected from "@/components/admin/AdminProtected";
 import { Button } from "@/components/ui/button";
 import { useUnreadInquiryCount } from "@/hooks/admin/useInquiries";
 import { relativeTime, useContentCounts, useRecentActivity } from "@/hooks/admin/useDashboard";
+import { useAnalytics } from "@/hooks/admin/useAnalytics";
 
 function Stat({ value, label, to }: { value: number; label: string; to: string }) {
   return (
@@ -32,6 +33,7 @@ function AttentionRow({ to, children }: { to: string; children: React.ReactNode 
 
 function AdminDashboardInner() {
   const { data: counts } = useContentCounts();
+  const { data: traffic } = useAnalytics(7);
   const { data: unread = 0 } = useUnreadInquiryCount();
   const { data: activity = [] } = useRecentActivity();
 
@@ -88,6 +90,24 @@ function AdminDashboardInner() {
           <Stat value={counts?.soldProperties ?? 0} label="Sold" to="/admin/properties" />
         </div>
       </section>
+
+      <section>
+        <h2 className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Traffic</h2>
+        <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
+          <Stat
+            value={Number(traffic?.totals?.views ?? 0)}
+            label="Views this week"
+            to="/admin/analytics"
+          />
+          <Stat
+            value={Number(traffic?.totals?.visitors ?? 0)}
+            label="Visitors this week"
+            to="/admin/analytics"
+          />
+        </div>
+      </section>
+
+
 
       <section>
         <h2 className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Recent activity</h2>

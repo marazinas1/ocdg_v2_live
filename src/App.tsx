@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { lazyWithRetry as lazy } from "./lib/lazyWithRetry";
 import { useFaviconFromSettings } from "@/hooks/useSiteSettings";
 import ScrollToTop from "./components/ScrollToTop";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 
 // Lazy-load all non-landing pages so the initial bundle stays small.
@@ -31,7 +32,9 @@ const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
 const AdminTestimonials = lazy(() => import("./pages/admin/AdminTestimonials"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminSetPassword = lazy(() => import("./pages/admin/AdminSetPassword"));
+
 
 const queryClient = new QueryClient();
 
@@ -54,6 +57,13 @@ const SettingsEffects = () => {
   return null;
 };
 
+/** First-party pageview tracking. Must sit inside the router. */
+const AnalyticsTracker = () => {
+  usePageTracking();
+  return null;
+};
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SettingsEffects />
@@ -62,6 +72,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <AnalyticsTracker />
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -102,7 +113,9 @@ const App = () => (
             <Route path="/admin/testimonials" element={<AdminTestimonials />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
             {/* Invited users have no role yet — this must stay unprotected. */}
+
             <Route path="/admin/set-password" element={<AdminSetPassword />} />
             <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
