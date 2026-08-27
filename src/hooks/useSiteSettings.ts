@@ -84,7 +84,9 @@ export type SiteSettingsRow = {
   hero_headline: string | null;
   hero_subline: string | null;
   hero_cta_label: string | null;
-  about_hero_image_path: string | null;
+  home_quote: string | null;
+  home_quote_attribution: string | null;
+
   about_story_image_path: string | null;
   about_portrait_image_path: string | null;
   about_hero_eyebrow: string | null;
