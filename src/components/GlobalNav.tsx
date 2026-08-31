@@ -27,9 +27,8 @@ const GlobalNav = () => {
   }, []);
 
   const developmentCategories = [
-    { label: "Active Listings", href: "/developments/active-listings" },
-    { label: "Under Contract", href: "/developments/under-contract" },
-    { label: "Sold", href: "/developments/sold" },
+    { label: "Current Developments", href: "/developments?filter=current" },
+    { label: "Sold", href: "/developments?filter=sold" },
   ];
 
   const handleInquire = () => {

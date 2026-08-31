@@ -4,6 +4,7 @@ import GlobalNav from "@/components/GlobalNav";
 import SEO from "@/components/SEO";
 import GlobalFooter from "@/components/GlobalFooter";
 import PropertyCarousel from "@/components/PropertyCarousel";
+import PublicPropertyCard from "@/components/PublicPropertyCard";
 import subpageHero from "@/assets/subpage-hero.jpg";
 import { usePublicProperties } from "@/hooks/usePublicProperties";
 import { STATUS_BADGE_CLASSES, STATUS_LABELS, type PropertyStatus } from "@/lib/admin/status";
@@ -19,8 +20,22 @@ const tabs: { label: string; value: DevGroup | "all" }[] = [
 
 const seeAllLinks: Record<DevGroup, { label: string; href: string }> = {
   current: { label: "See All Current Developments", href: "/developments?filter=current" },
-  sold: { label: "See All Sold", href: "/developments/sold" },
+  sold: { label: "See All Sold", href: "/developments?filter=sold" },
 };
+
+const PAGE_SIZE = 9;
+
+const CardSkeleton = () => (
+  <div className="card-elegant overflow-hidden h-full flex flex-col">
+    <div className="relative aspect-[4/3] bg-muted animate-pulse" />
+    <div className="p-6 flex flex-col gap-3">
+      <div className="h-3 w-1/3 bg-muted animate-pulse rounded" />
+      <div className="h-5 w-2/3 bg-muted animate-pulse rounded" />
+      <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
+      <div className="h-16 w-full bg-muted animate-pulse rounded" />
+    </div>
+  </div>
+);
 
 const Developments = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,13 +50,16 @@ const Developments = () => {
     v === "active" || v === "under-contract" || v === "current" ? "current" : v === "sold" ? "sold" : "all";
   const filterParam = normalizeFilter(searchParams.get("filter"));
   const [activeTab, setActiveTab] = useState<string>(filterParam);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     setActiveTab(normalizeFilter(searchParams.get("filter")));
+    setVisibleCount(PAGE_SIZE);
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    setVisibleCount(PAGE_SIZE);
     if (value === "all") {
       setSearchParams({});
     } else {
@@ -123,7 +141,15 @@ const Developments = () => {
   const currentDevs = allDevelopments.filter(
     (d) => d.status === "active" || d.status === "under-contract",
   );
-  const filtered = activeTab === "sold" ? soldDevs : currentDevs;
+
+  // Raw DB rows for the grid view (PublicPropertyCard consumes these directly)
+  const filteredCards = allProps.filter((p) =>
+    activeTab === "sold"
+      ? p.status === "sold"
+      : p.status === "active" || p.status === "under_contract",
+  );
+  const visibleCards = filteredCards.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredCards.length;
 
   return (
     <main className="min-h-screen bg-background">
@@ -171,16 +197,35 @@ const Developments = () => {
               {soldDevs.length > 0 && renderCategorySection("sold", soldDevs)}
             </>
           ) : isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-8 h-8 border-2 border-charcoal/20 border-t-charcoal rounded-full animate-spin" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : filteredCards.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-body text-lg">No developments in this category yet.</p>
               <p className="text-small mt-2">Check back soon for updates.</p>
             </div>
           ) : (
-            renderCategorySection(activeTab as DevGroup, filtered)
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {visibleCards.map((card, i) => (
+                  <PublicPropertyCard key={card.id} card={card} eager={i < 3} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center mt-12">
+                  <button
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                    className="inline-flex items-center justify-center px-8 py-3 text-xs font-medium tracking-[0.15em] uppercase border border-charcoal text-charcoal transition-all duration-300 hover:bg-charcoal hover:text-white"
+                    style={{ borderRadius: "4px" }}
+                  >
+                    See More
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
