@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { z } from 'npm:zod@3.23.8'
+import { sendTemplateEmail } from '../_shared/transactional-email-templates/send-email.ts'
 
 // Account administration for owners. Every call re-validates the caller's JWT
 // and their role server-side; nothing here trusts a role sent by the client.
