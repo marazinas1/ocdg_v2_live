@@ -88,6 +88,7 @@ function AdminUsersInner() {
     (InviteResult & { email: string }) | null
   >(null);
   const [pending, setPending] = useState<PendingAction>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const callerIsDeveloper =
