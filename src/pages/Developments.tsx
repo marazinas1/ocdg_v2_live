@@ -19,8 +19,22 @@ const tabs: { label: string; value: DevGroup | "all" }[] = [
 
 const seeAllLinks: Record<DevGroup, { label: string; href: string }> = {
   current: { label: "See All Current Developments", href: "/developments?filter=current" },
-  sold: { label: "See All Sold", href: "/developments/sold" },
+  sold: { label: "See All Sold", href: "/developments?filter=sold" },
 };
+
+const PAGE_SIZE = 9;
+
+const CardSkeleton = () => (
+  <div className="card-elegant overflow-hidden h-full flex flex-col">
+    <div className="relative aspect-[4/3] bg-muted animate-pulse" />
+    <div className="p-6 flex flex-col gap-3">
+      <div className="h-3 w-1/3 bg-muted animate-pulse rounded" />
+      <div className="h-5 w-2/3 bg-muted animate-pulse rounded" />
+      <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
+      <div className="h-16 w-full bg-muted animate-pulse rounded" />
+    </div>
+  </div>
+);
 
 const Developments = () => {
   const [searchParams, setSearchParams] = useSearchParams();
