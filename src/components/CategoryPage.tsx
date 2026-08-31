@@ -36,7 +36,7 @@ const CategoryPage = ({
   emptyMessage,
   children,
 }: {
-  status: PropertyStatus;
+  status: PropertyStatus | PropertyStatus[];
   eyebrow: string;
   heading: string;
   seoTitle: string;

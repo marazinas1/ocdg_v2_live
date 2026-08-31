@@ -19,8 +19,8 @@ const tabs: { label: string; value: DevGroup | "all" }[] = [
 ];
 
 const seeAllLinks: Record<DevGroup, { label: string; href: string }> = {
-  current: { label: "See All Current Developments", href: "/developments?filter=current" },
-  sold: { label: "See All Sold", href: "/developments?filter=sold" },
+  current: { label: "See All Current Developments", href: "/developments/current" },
+  sold: { label: "See All Sold", href: "/developments/sold" },
 };
 
 const PAGE_SIZE = 9;
