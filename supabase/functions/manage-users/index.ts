@@ -143,12 +143,31 @@ Deno.serve(async (req) => {
         options: { redirectTo },
       })
       if (link.error) return json({ error: link.error.message }, 400)
+      const actionLink = link.data?.properties?.action_link ?? null
+
+      // The link is also emailed with our own branded template, so a re-invite
+      // behaves like the first invite. Delivery problems must never fail the
+      // request: the link is still returned so the admin can hand it over.
+      let emailSent = false
+      if (actionLink) {
+        try {
+          const result = await sendTemplateEmail('admin-invite', email, {
+            templateData: { role: roleByUser.get(alreadyThere.id) ?? null, actionLink },
+            idempotencyKey: `admin-invite-${alreadyThere.id}-${Date.now()}`,
+          })
+          emailSent = result.sent
+          if (!result.sent) console.warn('admin-invite not sent:', result.reason)
+        } catch (err) {
+          console.error('admin-invite send failed:', err)
+        }
+      }
+
       return json({
         success: true,
         userId: alreadyThere.id,
-        emailSent: false,
+        emailSent,
         password: null,
-        actionLink: link.data?.properties?.action_link ?? null,
+        actionLink,
         reinvited: true,
       })
     }
