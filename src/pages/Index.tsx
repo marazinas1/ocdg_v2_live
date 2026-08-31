@@ -304,7 +304,7 @@ const Index = () => {
 
           <RevealSection>
             <div className="text-center mt-12">
-              <Link to="/developments?filter=current" className="btn-outline text-xs inline-flex">
+              <Link to="/developments/current" className="btn-outline text-xs inline-flex">
                 View All Current Projects
               </Link>
             </div>

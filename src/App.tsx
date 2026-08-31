@@ -18,6 +18,7 @@ const ActiveListings = lazy(() => import("./pages/ActiveListings"));
 const UnderContract = lazy(() => import("./pages/UnderContract"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon"));
 const SoldProjects = lazy(() => import("./pages/SoldProjects"));
+const CurrentDevelopments = lazy(() => import("./pages/CurrentDevelopments"));
 const Sold = lazy(() => import("./pages/Sold"));
 const Testimonials = lazy(() => import("./pages/Testimonials"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -87,6 +88,7 @@ const App = () => (
             />
             <Route path="/developments/under-contract" element={<UnderContract />} />
             <Route path="/developments/coming-soon" element={<ComingSoon />} />
+            <Route path="/developments/current" element={<CurrentDevelopments />} />
             <Route path="/developments/sold" element={<SoldProjects />} />
             {/* Legacy slugged URLs → canonical /developments/:slug (301-style). */}
             <Route path="/developments/current-projects/:slug" element={<SlugToCanonical />} />

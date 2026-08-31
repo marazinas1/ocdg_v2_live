@@ -27,8 +27,8 @@ const GlobalNav = () => {
   }, []);
 
   const developmentCategories = [
-    { label: "Current Developments", href: "/developments?filter=current" },
-    { label: "Sold", href: "/developments?filter=sold" },
+    { label: "Current Developments", href: "/developments/current" },
+    { label: "Sold", href: "/developments/sold" },
   ];
 
   const handleInquire = () => {
