@@ -348,6 +348,22 @@ function AdminUsersInner() {
                       </SelectContent>
                     </Select>
 
+                    {!u.confirmed && !isSelf && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={invite.isPending && resendingId === u.id}
+                        title="Send the invitation email again"
+                        onClick={() => resendInvite(u)}
+                      >
+                        {invite.isPending && resendingId === u.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Resend invitation"
+                        )}
+                      </Button>
+                    )}
+
                     <Button
                       variant="outline"
                       size="sm"
