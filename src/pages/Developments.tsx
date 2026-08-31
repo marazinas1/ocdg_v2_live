@@ -49,13 +49,16 @@ const Developments = () => {
     v === "active" || v === "under-contract" || v === "current" ? "current" : v === "sold" ? "sold" : "all";
   const filterParam = normalizeFilter(searchParams.get("filter"));
   const [activeTab, setActiveTab] = useState<string>(filterParam);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     setActiveTab(normalizeFilter(searchParams.get("filter")));
+    setVisibleCount(PAGE_SIZE);
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    setVisibleCount(PAGE_SIZE);
     if (value === "all") {
       setSearchParams({});
     } else {
