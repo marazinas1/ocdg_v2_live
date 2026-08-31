@@ -102,6 +102,39 @@ function AdminUsersInner() {
     }
   };
 
+  /**
+   * Re-sends the invitation for an account that exists but was never activated.
+   * The backend routes this through its re-invite branch, which emails the
+   * password link and still returns it for manual handover if sending fails.
+   */
+  const resendInvite = (user: AdminUser) => {
+    const targetRole: ManageableRole =
+      user.role === "owner" || user.role === "editor" ? user.role : role;
+    setResendingId(user.id);
+    invite.mutate(
+      { email: user.email, role: targetRole },
+      {
+        onSuccess: (result) => {
+          setResendingId(null);
+          if (result.emailSent) {
+            toast.success(`Invitation resent to ${user.email}.`);
+          } else {
+            toast.success(
+              `Invitation link generated for ${user.email} — send it manually.`,
+            );
+          }
+          if (result.actionLink || result.password) {
+            setHandover({ ...result, email: user.email });
+          }
+        },
+        onError: (err: Error) => {
+          setResendingId(null);
+          toast.error(err.message);
+        },
+      },
+    );
+  };
+
   const submitInvite = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim();
