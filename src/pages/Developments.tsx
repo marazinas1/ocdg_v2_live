@@ -196,16 +196,35 @@ const Developments = () => {
               {soldDevs.length > 0 && renderCategorySection("sold", soldDevs)}
             </>
           ) : isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-8 h-8 border-2 border-charcoal/20 border-t-charcoal rounded-full animate-spin" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : filteredCards.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-body text-lg">No developments in this category yet.</p>
               <p className="text-small mt-2">Check back soon for updates.</p>
             </div>
           ) : (
-            renderCategorySection(activeTab as DevGroup, filtered)
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {visibleCards.map((card, i) => (
+                  <PublicPropertyCard key={card.id} card={card} eager={i < 3} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center mt-12">
+                  <button
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                    className="inline-flex items-center justify-center px-8 py-3 text-xs font-medium tracking-[0.15em] uppercase border border-charcoal text-charcoal transition-all duration-300 hover:bg-charcoal hover:text-white"
+                    style={{ borderRadius: "4px" }}
+                  >
+                    See More
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
