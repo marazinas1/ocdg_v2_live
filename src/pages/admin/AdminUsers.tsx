@@ -88,6 +88,7 @@ function AdminUsersInner() {
     (InviteResult & { email: string }) | null
   >(null);
   const [pending, setPending] = useState<PendingAction>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const callerIsDeveloper =
@@ -100,6 +101,39 @@ function AdminUsersInner() {
     } catch {
       toast.error("Could not copy to clipboard");
     }
+  };
+
+  /**
+   * Re-sends the invitation for an account that exists but was never activated.
+   * The backend routes this through its re-invite branch, which emails the
+   * password link and still returns it for manual handover if sending fails.
+   */
+  const resendInvite = (user: AdminUser) => {
+    const targetRole: ManageableRole =
+      user.role === "owner" || user.role === "editor" ? user.role : role;
+    setResendingId(user.id);
+    invite.mutate(
+      { email: user.email, role: targetRole },
+      {
+        onSuccess: (result) => {
+          setResendingId(null);
+          if (result.emailSent) {
+            toast.success(`Invitation resent to ${user.email}.`);
+          } else {
+            toast.success(
+              `Invitation link generated for ${user.email} — send it manually.`,
+            );
+          }
+          if (result.actionLink || result.password) {
+            setHandover({ ...result, email: user.email });
+          }
+        },
+        onError: (err: Error) => {
+          setResendingId(null);
+          toast.error(err.message);
+        },
+      },
+    );
   };
 
   const submitInvite = (e: React.FormEvent) => {
@@ -347,6 +381,22 @@ function AdminUsersInner() {
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {!u.confirmed && !isSelf && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={invite.isPending && resendingId === u.id}
+                        title="Send the invitation email again"
+                        onClick={() => resendInvite(u)}
+                      >
+                        {invite.isPending && resendingId === u.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Resend invitation"
+                        )}
+                      </Button>
+                    )}
 
                     <Button
                       variant="outline"

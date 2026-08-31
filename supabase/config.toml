@@ -9,3 +9,6 @@ verify_jwt = true
 
 [functions.preview-transactional-email]
 verify_jwt = false
+
+[functions.manage-users]
+verify_jwt = true
