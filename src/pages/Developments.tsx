@@ -137,7 +137,15 @@ const Developments = () => {
   const currentDevs = allDevelopments.filter(
     (d) => d.status === "active" || d.status === "under-contract",
   );
-  const filtered = activeTab === "sold" ? soldDevs : currentDevs;
+
+  // Raw DB rows for the grid view (PublicPropertyCard consumes these directly)
+  const filteredCards = allProps.filter((p) =>
+    activeTab === "sold"
+      ? p.status === "sold"
+      : p.status === "active" || p.status === "under_contract",
+  );
+  const visibleCards = filteredCards.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredCards.length;
 
   return (
     <main className="min-h-screen bg-background">
