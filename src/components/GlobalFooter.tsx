@@ -44,9 +44,22 @@ const GlobalFooter = () => {
           <p className="text-xs text-white/40">
             © 2026 Ocean City Development Group, LLC. All rights reserved.
           </p>
-          <Link to="/admin" className="text-xs text-white/30 hover:text-white/60 transition-colors">
-            Admin
-          </Link>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-white/30">
+              Platform developed and maintained by{" "}
+              <a
+                href="https://www.deerva.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/40 hover:text-white/70 transition-colors underline-offset-2 hover:underline"
+              >
+                Deerva
+              </a>
+            </span>
+            <Link to="/admin" className="text-xs text-white/30 hover:text-white/60 transition-colors">
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
